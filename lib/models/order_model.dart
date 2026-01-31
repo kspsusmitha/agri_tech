@@ -4,10 +4,14 @@ class OrderModel {
   final String farmerId;
   final List<OrderItem> items;
   final double totalAmount;
-  final String status; // pending, approved, processing, shipped, delivered, cancelled
+  final String
+  status; // pending, approved, processing, shipped, delivered, cancelled
   final String? shippingAddress;
   final DateTime createdAt;
   final DateTime? deliveryDate;
+  final String? rating;
+  final String? feedback;
+  final DateTime? reviewedAt;
 
   OrderModel({
     required this.id,
@@ -19,6 +23,9 @@ class OrderModel {
     this.shippingAddress,
     required this.createdAt,
     this.deliveryDate,
+    this.rating,
+    this.feedback,
+    this.reviewedAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -32,6 +39,9 @@ class OrderModel {
       'shippingAddress': shippingAddress,
       'createdAt': createdAt.toIso8601String(),
       'deliveryDate': deliveryDate?.toIso8601String(),
+      'rating': rating,
+      'feedback': feedback,
+      'reviewedAt': reviewedAt?.toIso8601String(),
     };
   }
 
@@ -40,7 +50,8 @@ class OrderModel {
       id: json['id'] ?? '',
       buyerId: json['buyerId'] ?? '',
       farmerId: json['farmerId'] ?? '',
-      items: (json['items'] as List?)
+      items:
+          (json['items'] as List?)
               ?.map((item) => OrderItem.fromJson(item))
               .toList() ??
           [],
@@ -50,6 +61,11 @@ class OrderModel {
       createdAt: DateTime.parse(json['createdAt']),
       deliveryDate: json['deliveryDate'] != null
           ? DateTime.parse(json['deliveryDate'])
+          : null,
+      rating: json['rating'],
+      feedback: json['feedback'],
+      reviewedAt: json['reviewedAt'] != null
+          ? DateTime.parse(json['reviewedAt'])
           : null,
     );
   }
@@ -86,4 +102,3 @@ class OrderItem {
     );
   }
 }
-

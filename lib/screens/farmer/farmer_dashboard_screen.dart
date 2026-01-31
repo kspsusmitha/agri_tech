@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/session_service.dart';
 import '../role_selection_screen.dart';
 import 'disease_detection_screen.dart';
 import 'crop_management_screen.dart';
 import 'product_listing_screen.dart';
 import 'farmer_orders_screen.dart';
+import 'weather_alert_screen.dart';
+import 'inventory_screen.dart';
+import '../community/community_home_screen.dart';
+import 'farmer_medicine_orders_screen.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class FarmerDashboardScreen extends StatelessWidget {
   const FarmerDashboardScreen({super.key});
@@ -12,19 +19,29 @@ class FarmerDashboardScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Farmer Dashboard'),
+        title: Text(
+          'Farmer Hub',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+            ),
             onPressed: () {},
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
             onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog(context);
-              }
+              if (value == 'logout') _showLogoutDialog(context);
             },
             itemBuilder: (BuildContext context) => [
               const PopupMenuItem<String>(
@@ -41,129 +58,162 @@ class FarmerDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeCard(context),
-            const SizedBox(height: 24),
-            _buildStatsRow(context),
-            const SizedBox(height: 24),
-            const Text(
-              'Quick Actions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildQuickActionsGrid(context),
-            const SizedBox(height: 24),
-            _buildRecentCrops(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Color(AppConstants.primaryColorValue),
-              child: Icon(Icons.eco, color: Colors.white, size: 30),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+      body: Stack(
+        children: [
+          const GradientBackground(colors: AppConstants.primaryGradient),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Welcome, Farmer',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  // Image Slider at Top
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: ImageSlider(
+                      imageUrls: [
+                        'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=800',
+                        'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
+                        'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800',
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Manage your crops and products',
-                    style: TextStyle(color: Colors.grey[600]),
+                  const SizedBox(height: 24),
+
+                  // Welcome Message
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Welcome back, Farmer 👋',
+                          style: GoogleFonts.outfit(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Everything you need is at your fingertips.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 24),
+
+                  // Stats Section
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildGlassStatsRow(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Quick Actions Grid
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Tools & Services',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildQuickActionsGrid(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Recent Crops with Glassmorphism
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildRecentCropsGlass(context),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatsRow(BuildContext context) {
+  Widget _buildGlassStatsRow(BuildContext context) {
     return Row(
       children: [
         Expanded(
-          child: _buildStatCard(
-            'Active Crops',
+          child: _buildGlassStatCard(
+            'Crops',
             '12',
-            Icons.agriculture,
-            Colors.green,
+            Icons.agriculture_rounded,
+            AppConstants.primaryGradient,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
-            'Products Listed',
+          child: _buildGlassStatCard(
+            'Sales',
             '8',
-            Icons.inventory,
-            Colors.blue,
+            Icons.inventory_2_rounded,
+            AppConstants.oceanGradient,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildStatCard(
+          child: _buildGlassStatCard(
             'Orders',
             '15',
-            Icons.shopping_bag,
-            Colors.orange,
+            Icons.shopping_bag_rounded,
+            AppConstants.sunsetGradient,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Icon(icon, color: color, size: 24),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
+  Widget _buildGlassStatCard(
+    String title,
+    String value,
+    IconData icon,
+    List<Color> gradient,
+  ) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: gradient),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const SizedBox(height: 2),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 11,
-                color: Colors.grey[600],
-              ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
             ),
-          ],
-        ),
+          ),
+          Text(
+            title,
+            style: GoogleFonts.inter(fontSize: 11, color: Colors.white60),
+          ),
+        ],
       ),
     );
   }
@@ -173,95 +223,106 @@ class FarmerDashboardScreen extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.3,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'Disease Detection',
-          Icons.bug_report,
-          Colors.red,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const DiseaseDetectionScreen(),
-              ),
-            );
-          },
+          'Disease AI',
+          Icons.bug_report_rounded,
+          AppConstants.sunsetGradient,
+          () => _navigateTo(context, const DiseaseDetectionScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'Crop Management',
-          Icons.agriculture,
-          Colors.green,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const CropManagementScreen(),
-              ),
-            );
-          },
+          'Crop Sync',
+          Icons.sync_rounded,
+          AppConstants.primaryGradient,
+          () => _navigateTo(context, const CropManagementScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'Product Listing',
-          Icons.inventory_2,
-          Colors.blue,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProductListingScreen(),
-              ),
-            );
-          },
+          'Marketplace',
+          Icons.storefront_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const ProductListingScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'My Orders',
-          Icons.receipt_long,
-          Colors.orange,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FarmerOrdersScreen(),
-              ),
-            );
-          },
+          'Product Orders',
+          Icons.receipt_long_rounded,
+          AppConstants.sunsetGradient,
+          () => _navigateTo(context, const FarmerOrdersScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Med & Fert',
+          Icons.medication_rounded,
+          AppConstants.purpleGradient,
+          () => _navigateTo(context, const FarmerMedicineOrdersScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Weather',
+          Icons.wb_cloudy_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const WeatherAlertScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Community',
+          Icons.forum_rounded,
+          AppConstants.purpleGradient,
+          () => _navigateTo(context, const CommunityHomeScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Inventory',
+          Icons.grid_view_rounded,
+          AppConstants.primaryGradient,
+          () => _navigateTo(context, const InventoryScreen()),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  Widget _buildActionGlassCard(
     BuildContext context,
     String title,
     IconData icon,
-    Color color,
+    List<Color> gradient,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
+    return GlassContainer(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 32),
-              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: gradient),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 10),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -271,83 +332,105 @@ class FarmerDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentCrops(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Recent Crops',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+  Widget _buildRecentCropsGlass(BuildContext context) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Recent Crops',
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const CropManagementScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('View All'),
+              ),
+              TextButton(
+                onPressed: () =>
+                    _navigateTo(context, const CropManagementScreen()),
+                child: Text(
+                  'View Details',
+                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
                 ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            _buildCropItem('Tomato', 'Vegetative', 45),
-            _buildCropItem('Wheat', 'Flowering', 60),
-            _buildCropItem('Corn', 'Fruiting', 75),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildCropItemGlass(
+            'Tomato Hybrid',
+            'Vegetative Phase',
+            '45 Days',
+            Icons.eco_rounded,
+            Colors.redAccent,
+          ),
+          const Divider(color: Colors.white12),
+          _buildCropItemGlass(
+            'Sonora Wheat',
+            'Flowering Phase',
+            '62 Days',
+            Icons.grass_rounded,
+            Colors.amber,
+          ),
+          const Divider(color: Colors.white12),
+          _buildCropItemGlass(
+            'Sweet Corn',
+            'Fruiting Phase',
+            '78 Days',
+            Icons.agriculture_rounded,
+            Colors.greenAccent,
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildCropItem(String cropName, String phase, int days) {
+  Widget _buildCropItemGlass(
+    String name,
+    String phase,
+    String duration,
+    IconData icon,
+    Color iconColor,
+  ) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: const Color(AppConstants.primaryColorValue).withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+              color: iconColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              Icons.eco,
-              color: Color(AppConstants.primaryColorValue),
-            ),
+            child: Icon(icon, color: iconColor),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  cropName,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
+                  name,
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                    fontSize: 16,
                   ),
                 ),
                 Text(
-                  '$phase • $days days',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  '$phase • $duration',
+                  style: GoogleFonts.inter(color: Colors.white60, fontSize: 12),
                 ),
               ],
             ),
+          ),
+          const Icon(
+            Icons.arrow_forward_ios_rounded,
+            color: Colors.white24,
+            size: 16,
           ),
         ],
       ),
@@ -359,8 +442,12 @@ class FarmerDashboardScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          backgroundColor: Colors.grey[900],
+          title: Text('Logout', style: GoogleFonts.outfit(color: Colors.white)),
+          content: Text(
+            'Are you sure you want to end your session?',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -368,12 +455,18 @@ class FarmerDashboardScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _handleLogout(context);
+                Navigator.pop(context);
+                SessionService().clearUser();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectionScreen(),
+                  ),
+                  (route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.redAccent,
               ),
               child: const Text('Logout'),
             ),
@@ -382,25 +475,4 @@ class FarmerDashboardScreen extends StatelessWidget {
       },
     );
   }
-
-  void _handleLogout(BuildContext context) {
-    // Navigate back to role selection screen
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RoleSelectionScreen(),
-      ),
-      (route) => false, // Remove all previous routes
-    );
-
-    // Show logout success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 }
-

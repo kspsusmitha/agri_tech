@@ -65,8 +65,26 @@ dependencies:
   # Firebase Realtime Database
   firebase_database: ^11.1.3
   
+  # Firebase Firestore
+  cloud_firestore: ^5.4.3
+  
+  # Firebase Storage for image uploads
+  firebase_storage: ^12.3.2
+  
   # Firebase ML Model Downloader for custom models
   firebase_ml_model_downloader: ^0.3.3+8
+
+  # Geolocation for weather
+  geolocator: ^13.0.1
+  
+  # PDF generation for billing
+  pdf: ^3.11.1
+  
+  # Excel generation for reports
+  excel: ^4.0.0
+  
+  # Premium typography
+  google_fonts: ^6.2.1
 
 dev_dependencies:
   flutter_test:

@@ -6,6 +6,8 @@ class UserModel {
   final String phone;
   final String role; // admin, farmer, buyer
   final String? address;
+  final String? farmLocation;
+  final List<String>? cropPreferences;
   final DateTime? createdAt;
 
   UserModel({
@@ -16,6 +18,8 @@ class UserModel {
     required this.phone,
     required this.role,
     this.address,
+    this.farmLocation,
+    this.cropPreferences,
     this.createdAt,
   });
 
@@ -28,7 +32,10 @@ class UserModel {
       'phone': phone,
       'role': role,
       'address': address,
-      'createdAt': createdAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'farmLocation': farmLocation,
+      'cropPreferences': cropPreferences,
+      'createdAt':
+          createdAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
     };
   }
 
@@ -41,6 +48,10 @@ class UserModel {
       phone: json['phone'] ?? '',
       role: json['role'] ?? '',
       address: json['address'],
+      farmLocation: json['farmLocation'],
+      cropPreferences: json['cropPreferences'] != null
+          ? List<String>.from(json['cropPreferences'])
+          : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : null,
@@ -57,8 +68,9 @@ class UserModel {
       phone: phone,
       role: role,
       address: address,
+      farmLocation: farmLocation,
+      cropPreferences: cropPreferences,
       createdAt: createdAt,
     );
   }
 }
-

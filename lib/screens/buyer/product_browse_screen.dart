@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/product_service.dart';
+import '../../services/cart_service.dart';
+import '../../services/session_service.dart';
+import '../../models/product_model.dart';
+import 'dart:convert';
 import 'buyer_cart_screen.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ProductBrowseScreen extends StatefulWidget {
   const ProductBrowseScreen({super.key});
@@ -11,119 +18,129 @@ class ProductBrowseScreen extends StatefulWidget {
 
 class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
   String _selectedCategory = 'All';
-  final List<Map<String, dynamic>> _products = [];
-
-  @override
-  void initState() {
-    super.initState();
-    // Sample data
-    _products.addAll([
-      {
-        'id': '1',
-        'name': 'Fresh Tomatoes',
-        'price': 2.50,
-        'unit': 'kg',
-        'category': 'Vegetables',
-        'farmer': 'Farmer 1',
-        'rating': 4.5,
-      },
-      {
-        'id': '2',
-        'name': 'Organic Wheat',
-        'price': 1.80,
-        'unit': 'kg',
-        'category': 'Grains',
-        'farmer': 'Farmer 2',
-        'rating': 4.8,
-      },
-      {
-        'id': '3',
-        'name': 'Sweet Corn',
-        'price': 3.00,
-        'unit': 'piece',
-        'category': 'Vegetables',
-        'farmer': 'Farmer 1',
-        'rating': 4.2,
-      },
-      {
-        'id': '4',
-        'name': 'Fresh Potatoes',
-        'price': 1.50,
-        'unit': 'kg',
-        'category': 'Vegetables',
-        'farmer': 'Farmer 3',
-        'rating': 4.6,
-      },
-    ]);
-  }
+  String _searchQuery = '';
+  final ProductService _productService = ProductService();
+  final CartService _cartService = CartService();
+  final String _buyerId = SessionService().user?.id ?? 'guest';
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = _selectedCategory == 'All'
-        ? _products
-        : _products.where((p) => p['category'] == _selectedCategory).toList();
-
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Browse Products'),
+        title: Text(
+          'Farmer\'s Market',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.shopping_cart),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _cartService.streamCartItems(_buyerId),
+            builder: (context, snapshot) {
+              final cartCount = snapshot.data?.length ?? 0;
+              return IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(
+                      Icons.shopping_cart_rounded,
+                      color: Colors.white,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
+                    if (cartCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                          child: Text(
+                            cartCount.toString(),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BuyerCartScreen(),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const BuyerCartScreen(),
+                  ),
                 ),
               );
             },
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          _buildSearchBar(),
-          _buildCategoryFilter(),
-          Expanded(
-            child: GridView.builder(
-              padding: const EdgeInsets.all(16),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-                childAspectRatio: 0.75,
-              ),
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                return _buildProductCard(filteredProducts[index]);
-              },
+          const GradientBackground(colors: AppConstants.sunsetGradient),
+          SafeArea(
+            child: Column(
+              children: [
+                _buildSearchBarGlass(),
+                _buildCategoryFilterGlass(),
+                Expanded(
+                  child: StreamBuilder<List<ProductModel>>(
+                    stream: _productService.streamApprovedProducts(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        );
+                      }
+
+                      final products = snapshot.data ?? [];
+                      final filteredProducts = products.where((p) {
+                        final matchesCategory =
+                            _selectedCategory == 'All' ||
+                            p.category == _selectedCategory;
+                        final matchesSearch = p.name.toLowerCase().contains(
+                          _searchQuery.toLowerCase(),
+                        );
+                        return matchesCategory && matchesSearch;
+                      }).toList();
+
+                      if (filteredProducts.isEmpty) {
+                        return Center(
+                          child: Text(
+                            'No products found.',
+                            style: GoogleFonts.inter(color: Colors.white70),
+                          ),
+                        );
+                      }
+
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                              childAspectRatio: 0.75,
+                            ),
+                        itemCount: filteredProducts.length,
+                        itemBuilder: (context, index) =>
+                            _buildProductCardGlass(filteredProducts[index]),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ],
@@ -131,23 +148,27 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBarGlass() {
     return Padding(
       padding: const EdgeInsets.all(16),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: 'Search products...',
-          prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: GlassContainer(
+        borderRadius: 20,
+        child: TextField(
+          onChanged: (val) => setState(() => _searchQuery = val),
+          style: const TextStyle(color: Colors.white),
+          decoration: InputDecoration(
+            hintText: 'Search fresh produce...',
+            hintStyle: const TextStyle(color: Colors.white54),
+            prefixIcon: const Icon(Icons.search_rounded, color: Colors.white70),
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(vertical: 15),
           ),
-          filled: true,
         ),
       ),
     );
   }
 
-  Widget _buildCategoryFilter() {
+  Widget _buildCategoryFilterGlass() {
     final categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Dairy'];
 
     return SizedBox(
@@ -161,15 +182,26 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
           final isSelected = _selectedCategory == category;
 
           return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilterChip(
-              label: Text(category),
-              selected: isSelected,
-              onSelected: (selected) {
-                setState(() {
-                  _selectedCategory = category;
-                });
-              },
+            padding: const EdgeInsets.only(right: 12),
+            child: GestureDetector(
+              onTap: () => setState(() => _selectedCategory = category),
+              child: GlassContainer(
+                borderRadius: 25,
+                color: isSelected ? Colors.white30 : Colors.white10,
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Center(
+                  child: Text(
+                    category,
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontWeight: isSelected
+                          ? FontWeight.bold
+                          : FontWeight.normal,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ),
             ),
           );
         },
@@ -177,25 +209,60 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
     );
   }
 
-  Widget _buildProductCard(Map<String, dynamic> product) {
-    return Card(
+  Widget _buildProductCardGlass(ProductModel product) {
+    return GlassContainer(
+      borderRadius: 24,
       child: InkWell(
         onTap: () => _showProductDetails(product),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
+              child: Stack(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(color: Colors.white10),
+                    child: product.imageBase64 != null
+                        ? ClipRRect(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(24),
+                            ),
+                            child: Image.memory(
+                              base64Decode(product.imageBase64!),
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            ),
+                          )
+                        : const Center(
+                            child: Icon(
+                              Icons.eco_rounded,
+                              size: 48,
+                              color: Colors.white24,
+                            ),
+                          ),
                   ),
-                ),
-                child: const Center(
-                  child: Icon(Icons.image, size: 48, color: Colors.grey),
-                ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: GlassContainer(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      borderRadius: 10,
+                      child: Text(
+                        '₹${product.price}',
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             Padding(
@@ -204,56 +271,46 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    product['name'],
-                    style: const TextStyle(
+                    product.name,
+                    style: GoogleFonts.outfit(
                       fontWeight: FontWeight.bold,
-                      fontSize: 14,
+                      fontSize: 15,
+                      color: Colors.white,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
                   Text(
-                    'By ${product['farmer']}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
+                    'by ${product.farmerName}',
+                    style: GoogleFonts.inter(
+                      color: Colors.white60,
                       fontSize: 11,
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber, size: 14),
-                      const SizedBox(width: 4),
-                      Text(
-                        product['rating'].toString(),
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                    ],
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 8),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        '\$${product['price'].toStringAsFixed(2)}',
-                        style: const TextStyle(
-                          color: Color(AppConstants.primaryColorValue),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                      CircleAvatar(
+                        radius: 18,
+                        backgroundColor: Colors.white24,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.add_shopping_cart_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
+                          onPressed: () {
+                            _cartService.addToCart(_buyerId, product, 1);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('${product.name} added to cart'),
+                                duration: const Duration(seconds: 1),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.add_shopping_cart),
-                        iconSize: 20,
-                        color: const Color(AppConstants.primaryColorValue),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${product['name']} added to cart'),
-                            ),
-                          );
-                        },
                       ),
                     ],
                   ),
@@ -266,102 +323,139 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
     );
   }
 
-  void _showProductDetails(Map<String, dynamic> product) {
+  void _showProductDetails(ProductModel product) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.7,
-        minChildSize: 0.5,
-        maxChildSize: 0.95,
-        builder: (context, scrollController) => SingleChildScrollView(
-          controller: scrollController,
-          child: Padding(
-            padding: const EdgeInsets.all(24),
+      builder: (context) => GlassContainer(
+        borderRadius: 40,
+        color: Colors.black87,
+        child: DraggableScrollableSheet(
+          initialChildSize: 0.8,
+          minChildSize: 0.5,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.all(30),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 200,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Center(
-                    child: Icon(Icons.image, size: 64, color: Colors.grey),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  product['name'],
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'By ${product['farmer']}',
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Icon(Icons.star, color: Colors.amber),
-                    const SizedBox(width: 4),
-                    Text(
-                      product['rating'].toString(),
-                      style: const TextStyle(fontSize: 16),
+                Center(
+                  child: Container(
+                    width: 50,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'Description',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 30),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(20),
+                  child: product.imageBase64 != null
+                      ? Image.memory(
+                          base64Decode(product.imageBase64!),
+                          fit: BoxFit.cover,
+                          height: 300,
+                          width: double.infinity,
+                        )
+                      : Container(
+                          height: 300,
+                          color: Colors.white10,
+                          child: const Icon(
+                            Icons.image,
+                            size: 80,
+                            color: Colors.white24,
+                          ),
+                        ),
+                ),
+                const SizedBox(height: 30),
                 Text(
-                  'Fresh ${product['name'].toString().toLowerCase()} directly from the farm. '
-                  'High quality produce with no pesticides.',
-                  style: TextStyle(color: Colors.grey[700]),
+                  product.name,
+                  style: GoogleFonts.outfit(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Fresh from ${product.farmerName}\'s farm',
+                  style: GoogleFonts.inter(color: Colors.white70),
                 ),
                 const SizedBox(height: 24),
+                Text(
+                  'Overview',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  product.description.isEmpty
+                      ? 'Fresh organic ${product.name.toLowerCase()} grown with care.'
+                      : product.description,
+                  style: GoogleFonts.inter(
+                    color: Colors.white60,
+                    fontSize: 15,
+                    height: 1.5,
+                  ),
+                ),
+                const SizedBox(height: 40),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      '\$${product['price'].toStringAsFixed(2)} / ${product['unit']}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Color(AppConstants.primaryColorValue),
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Price per ${product.unit}',
+                          style: GoogleFonts.inter(
+                            color: Colors.white38,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          '₹${product.price}',
+                          style: GoogleFonts.outfit(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                    SizedBox(
-                      width: 150,
-                      child: ElevatedButton.icon(
-                        onPressed: () {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('${product['name']} added to cart'),
-                            ),
-                          );
-                        },
-                        icon: const Icon(Icons.add_shopping_cart),
-                        label: const Text('Add to Cart'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(AppConstants.primaryColorValue),
-                          foregroundColor: Colors.white,
+                    ElevatedButton.icon(
+                      onPressed: () {
+                        _cartService.addToCart(_buyerId, product, 1);
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${product.name} added to cart'),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.add_shopping_cart_rounded),
+                      label: const Text('Add to Cart'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
                         ),
                       ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 30),
               ],
             ),
           ),
@@ -370,4 +464,3 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
     );
   }
 }
-

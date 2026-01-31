@@ -7,37 +7,24 @@ class AuthService {
   // IMPORTANT: Make sure Realtime Database is enabled in Firebase Console
   // Get your database URL from: Firebase Console -> Realtime Database -> Data tab
   // Update the databaseURL below with your actual URL
-  
+
   // Common URL formats (update with your actual URL):
   // New: https://plantdisease-e827d-default-rtdb.<REGION>.firebasedatabase.app
   // Legacy: https://plantdisease-e827d.firebaseio.com
-  
+
   // Your Firebase Realtime Database URL
-  static const String databaseURL = 'https://plantdisease-e827d-default-rtdb.firebaseio.com';
-  
-  late final DatabaseReference _database;
-  
+  // Now configured in firebase_options.dart
+
+  final DatabaseReference _database = FirebaseDatabase.instance.ref();
+
   AuthService() {
-    try {
-      // Initialize with explicit URL
-      final firebaseDatabase = FirebaseDatabase.instanceFor(
-        app: FirebaseDatabase.instance.app,
-        databaseURL: databaseURL,
-      );
-      _database = firebaseDatabase.ref();
-      debugPrint('✅ [Auth Service] Database initialized with URL: $databaseURL');
-    } catch (e) {
-      debugPrint('❌ [Auth Service] Failed to initialize with URL: $e');
-      debugPrint('   Database URL: $databaseURL');
-      debugPrint('   Please check FIREBASE_REALTIME_DATABASE_SETUP.md for setup instructions');
-      rethrow;
-    }
+    debugPrint('✅ [Auth Service] Database initialized');
   }
-  
+
   // Predefined admin credentials
   static const String adminEmail = 'admin@farmtech.com';
   static const String adminPassword = 'admin123';
-  
+
   /// Register a new user
   Future<Map<String, dynamic>> registerUser({
     required String name,
@@ -49,10 +36,15 @@ class AuthService {
   }) async {
     try {
       // Validate role
-      if (!['farmer', 'buyer'].contains(role.toLowerCase())) {
+      if (![
+        'farmer',
+        'buyer',
+        'medicine_seller',
+      ].contains(role.toLowerCase())) {
         return {
           'success': false,
-          'message': 'Invalid role. Only farmer and buyer can register.',
+          'message':
+              'Invalid role. Only farmer, buyer, and medicine seller can register.',
         };
       }
 
@@ -66,8 +58,12 @@ class AuthService {
       }
 
       // Generate user ID
-      final userId = _database.child('users').child(role.toLowerCase()).push().key!;
-      
+      final userId = _database
+          .child('users')
+          .child(role.toLowerCase())
+          .push()
+          .key!;
+
       // Create user model
       final user = UserModel(
         id: userId,
@@ -82,12 +78,14 @@ class AuthService {
 
       // Save to Realtime Database
       // Structure: users/{role}/{userId}
-      await _database.child('users').child(role.toLowerCase()).child(userId).set(
-        user.toJson(),
-      );
+      await _database
+          .child('users')
+          .child(role.toLowerCase())
+          .child(userId)
+          .set(user.toJson());
 
       debugPrint('✅ [Auth Service] User registered: $email as $role');
-      
+
       return {
         'success': true,
         'message': 'Registration successful!',
@@ -110,7 +108,7 @@ class AuthService {
   }) async {
     try {
       final emailLower = email.toLowerCase().trim();
-      
+
       // Check admin credentials first
       if (role.toLowerCase() == 'admin') {
         if (emailLower == adminEmail && password == adminPassword) {
@@ -124,7 +122,7 @@ class AuthService {
             role: 'admin',
             createdAt: DateTime.now(),
           );
-          
+
           debugPrint('✅ [Auth Service] Admin login successful');
           return {
             'success': true,
@@ -132,10 +130,7 @@ class AuthService {
             'user': adminUser.copyWithoutPassword(),
           };
         } else {
-          return {
-            'success': false,
-            'message': 'Invalid admin credentials',
-          };
+          return {'success': false, 'message': 'Invalid admin credentials'};
         }
       }
 
@@ -147,15 +142,19 @@ class AuthService {
 
       if (usersSnapshot.exists) {
         final usersData = usersSnapshot.value as Map<dynamic, dynamic>;
-        
+
         // Find user with matching email and password
         for (var entry in usersData.entries) {
           final userData = entry.value as Map<dynamic, dynamic>;
-          final userEmail = (userData['email'] as String?)?.toLowerCase().trim();
+          final userEmail = (userData['email'] as String?)
+              ?.toLowerCase()
+              .trim();
           final userPassword = userData['password'] as String?;
-          
+
           if (userEmail == emailLower && userPassword == password) {
-            final user = UserModel.fromJson(Map<String, dynamic>.from(userData));
+            final user = UserModel.fromJson(
+              Map<String, dynamic>.from(userData),
+            );
             debugPrint('✅ [Auth Service] Login successful: $email as $role');
             return {
               'success': true,
@@ -166,16 +165,10 @@ class AuthService {
         }
       }
 
-      return {
-        'success': false,
-        'message': 'Invalid email or password',
-      };
+      return {'success': false, 'message': 'Invalid email or password'};
     } catch (e) {
       debugPrint('❌ [Auth Service] Login error: $e');
-      return {
-        'success': false,
-        'message': 'Login failed: ${e.toString()}',
-      };
+      return {'success': false, 'message': 'Login failed: ${e.toString()}'};
     }
   }
 
@@ -190,10 +183,12 @@ class AuthService {
       if (usersSnapshot.exists) {
         final usersData = usersSnapshot.value as Map<dynamic, dynamic>;
         final emailLower = email.toLowerCase().trim();
-        
+
         for (var entry in usersData.entries) {
           final userData = entry.value as Map<dynamic, dynamic>;
-          final userEmail = (userData['email'] as String?)?.toLowerCase().trim();
+          final userEmail = (userData['email'] as String?)
+              ?.toLowerCase()
+              .trim();
           if (userEmail == emailLower) {
             return true;
           }
@@ -223,6 +218,68 @@ class AuthService {
     } catch (e) {
       debugPrint('❌ [Auth Service] Get user error: $e');
       return null;
+    }
+  }
+
+  /// Stream all users for admin management
+  Stream<List<UserModel>> streamAllUsers() {
+    return _database.child('users').onValue.map((event) {
+      if (!event.snapshot.exists) return [];
+
+      final Map<dynamic, dynamic> rolesData =
+          event.snapshot.value as Map<dynamic, dynamic>;
+      final List<UserModel> allUsers = [];
+
+      rolesData.forEach((role, users) {
+        if (users is Map) {
+          users.forEach((id, userData) {
+            allUsers.add(
+              UserModel.fromJson(Map<String, dynamic>.from(userData)),
+            );
+          });
+        }
+      });
+
+      allUsers.sort((a, b) {
+        final dateA = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final dateB = b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return dateB.compareTo(dateA);
+      });
+      return allUsers;
+    });
+  }
+
+  /// Update user status (block/deactivate)
+  Future<bool> updateUserStatus(
+    String userId,
+    String role,
+    String status,
+  ) async {
+    try {
+      await _database
+          .child('users')
+          .child(role.toLowerCase())
+          .child(userId)
+          .update({'status': status});
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Auth Service] Update user status error: $e');
+      return false;
+    }
+  }
+
+  /// Delete user
+  Future<bool> deleteUser(String userId, String role) async {
+    try {
+      await _database
+          .child('users')
+          .child(role.toLowerCase())
+          .child(userId)
+          .remove();
+      return true;
+    } catch (e) {
+      debugPrint('❌ [Auth Service] Delete user error: $e');
+      return false;
     }
   }
 }

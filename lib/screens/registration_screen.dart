@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../utils/constants.dart';
 import '../services/auth_service.dart';
+import '../services/session_service.dart';
 import '../models/user_model.dart';
+import '../widgets/glass_widgets.dart';
 import 'farmer/farmer_dashboard_screen.dart';
 import 'buyer/buyer_dashboard_screen.dart';
+import 'medicine_seller/medicine_seller_dashboard_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class RegistrationScreen extends StatefulWidget {
   final String selectedRole;
 
-  const RegistrationScreen({
-    super.key,
-    required this.selectedRole,
-  });
+  const RegistrationScreen({super.key, required this.selectedRole});
 
   @override
   State<RegistrationScreen> createState() => _RegistrationScreenState();
@@ -68,8 +69,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     if (result['success'] == true) {
       final user = result['user'] as UserModel;
-      
-      // Navigate to appropriate dashboard
+
+      SessionService().setUser(user);
+
       Widget destination;
       switch (user.role.toLowerCase()) {
         case 'farmer':
@@ -77,6 +79,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           break;
         case 'buyer':
           destination = const BuyerDashboardScreen();
+          break;
+        case 'medicine_seller':
+          destination = const MedicineSellerDashboardScreen();
           break;
         default:
           destination = const FarmerDashboardScreen();
@@ -87,7 +92,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
           context,
           MaterialPageRoute(builder: (context) => destination),
         );
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Welcome, ${user.name}! Registration successful.'),
@@ -110,20 +115,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final roleColor = _getRoleColor(widget.selectedRole);
-    
+    final roleGradient = _getRoleGradient(widget.selectedRole);
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color(AppConstants.primaryColorValue),
-              const Color(AppConstants.secondaryColorValue),
-            ],
-          ),
-        ),
+      body: GradientBackground(
+        colors: roleGradient,
         child: SafeArea(
           child: SingleChildScrollView(
             child: Padding(
@@ -135,244 +131,213 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                   children: [
                     const SizedBox(height: 20),
                     // Back button
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+                    Align(
                       alignment: Alignment.centerLeft,
+                      child: GlassContainer(
+                        borderRadius: 50,
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 30),
                     // Icon
-                    Icon(
-                      _getRoleIcon(widget.selectedRole),
-                      size: 70,
-                      color: Colors.white,
+                    Center(
+                      child: GlassContainer(
+                        borderRadius: 100,
+                        padding: const EdgeInsets.all(20),
+                        child: Icon(
+                          _getRoleIcon(widget.selectedRole),
+                          size: 60,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 24),
                     // Title
                     Text(
-                      '${widget.selectedRole.toUpperCase()} Registration',
-                      style: const TextStyle(
-                        fontSize: 26,
+                      '${widget.selectedRole.toUpperCase()} REGISTRATION',
+                      style: GoogleFonts.outfit(
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: 1.5,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Create your account to get started',
-                      style: TextStyle(
+                      style: GoogleFonts.inter(
                         fontSize: 16,
-                        color: Colors.white70,
+                        color: Colors.white.withOpacity(0.7),
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 30),
-                    // Name field
-                    TextFormField(
-                      controller: _nameController,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Full Name',
-                        hintText: 'Enter your full name',
-                        prefixIcon: const Icon(Icons.person),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Email field
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Email',
-                        hintText: 'Enter your email',
-                        prefixIcon: const Icon(Icons.email),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your email';
-                        }
-                        if (!value.contains('@')) {
-                          return 'Please enter a valid email';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Phone field
-                    TextFormField(
-                      controller: _phoneController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 10,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Phone Number',
-                        hintText: 'Enter 10-digit phone number',
-                        prefixIcon: const Icon(Icons.phone),
-                        counterText: '', // Hide character counter
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly, // Only allow digits
-                      ],
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        // Check if it's exactly 10 digits and only numbers
-                        if (value.length != 10) {
-                          return 'Phone number must be exactly 10 digits';
-                        }
-                        // Double check it's only numbers (regex)
-                        if (!RegExp(r'^[0-9]+$').hasMatch(value)) {
-                          return 'Phone number must contain only numbers';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Password field
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: _obscurePassword,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Password',
-                        hintText: 'Enter your password',
-                        prefixIcon: const Icon(Icons.lock),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
+                    const SizedBox(height: 40),
+
+                    // Glass Form
+                    GlassContainer(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        children: [
+                          _buildTextField(
+                            controller: _nameController,
+                            label: 'Full Name',
+                            hint: 'Enter your full name',
+                            icon: Icons.person_outline,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your name';
+                              }
+                              return null;
+                            },
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your password';
-                        }
-                        if (value.length < 6) {
-                          return 'Password must be at least 6 characters';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    // Confirm Password field
-                    TextFormField(
-                      controller: _confirmPasswordController,
-                      obscureText: _obscureConfirmPassword,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Confirm Password',
-                        hintText: 'Confirm your password',
-                        prefixIcon: const Icon(Icons.lock_outline),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            _obscureConfirmPassword
-                                ? Icons.visibility
-                                : Icons.visibility_off,
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _emailController,
+                            label: 'Email',
+                            hint: 'Enter your email',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              if (!value.contains('@')) {
+                                return 'Please enter a valid email';
+                              }
+                              return null;
+                            },
                           ),
-                          onPressed: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _phoneController,
+                            label: 'Phone Number',
+                            hint: '10-digit phone number',
+                            icon: Icons.phone_outlined,
+                            keyboardType: TextInputType.number,
+                            maxLength: 10,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your phone number';
+                              }
+                              if (value.length != 10) {
+                                return 'Phone number must be 10 digits';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _passwordController,
+                            label: 'Password',
+                            hint: 'At least 6 characters',
+                            icon: Icons.lock_outline,
+                            isPassword: true,
+                            obscureText: _obscurePassword,
+                            onTogglePassword: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your password';
+                              }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _confirmPasswordController,
+                            label: 'Confirm Password',
+                            hint: 'Re-enter your password',
+                            icon: Icons.lock_clock_outlined,
+                            isPassword: true,
+                            obscureText: _obscureConfirmPassword,
+                            onTogglePassword: () {
+                              setState(() {
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _addressController,
+                            label: 'Address (Optional)',
+                            hint: 'Enter your address',
+                            icon: Icons.location_on_outlined,
+                            maxLines: 2,
+                          ),
+                        ],
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please confirm your password';
-                        }
-                        if (value != _passwordController.text) {
-                          return 'Passwords do not match';
-                        }
-                        return null;
-                      },
                     ),
-                    const SizedBox(height: 16),
-                    // Address field (optional)
-                    TextFormField(
-                      controller: _addressController,
-                      maxLines: 2,
-                      style: const TextStyle(color: Colors.black87),
-                      decoration: InputDecoration(
-                        labelText: 'Address (Optional)',
-                        hintText: 'Enter your address',
-                        prefixIcon: const Icon(Icons.location_on),
-                        filled: true,
-                        fillColor: Colors.white,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
+
                     const SizedBox(height: 32),
+
                     // Register button
-                    ElevatedButton(
-                      onPressed: _isLoading ? null : _handleRegistration,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: roleColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    Container(
+                      height: 60,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
                       ),
-                      child: _isLoading
-                          ? const SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _handleRegistration,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: roleGradient[0],
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.blue,
+                                  ),
+                                ),
+                              )
+                            : Text(
+                                'REGISTER',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1.5,
+                                ),
                               ),
-                            )
-                          : const Text(
-                              'Register',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                      ),
                     ),
+                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -383,25 +348,108 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     );
   }
 
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    bool isPassword = false,
+    bool obscureText = false,
+    VoidCallback? onTogglePassword,
+    TextInputType? keyboardType,
+    int? maxLength,
+    int maxLines = 1,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 6),
+        TextFormField(
+          controller: controller,
+          obscureText: obscureText,
+          keyboardType: keyboardType,
+          validator: validator,
+          maxLength: maxLength,
+          maxLines: maxLines,
+          style: const TextStyle(color: Colors.white, fontSize: 14),
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: Colors.white.withOpacity(0.5),
+              fontSize: 14,
+            ),
+            prefixIcon: Icon(icon, color: Colors.white70, size: 20),
+            suffixIcon: isPassword
+                ? IconButton(
+                    icon: Icon(
+                      obscureText ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.white70,
+                      size: 20,
+                    ),
+                    onPressed: onTogglePassword,
+                  )
+                : null,
+            counterText: '',
+            filled: true,
+            fillColor: Colors.white.withOpacity(0.1),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 12,
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white24),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.white),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.redAccent),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   IconData _getRoleIcon(String role) {
     switch (role.toLowerCase()) {
       case 'farmer':
-        return Icons.eco;
+        return Icons.eco_rounded;
       case 'buyer':
-        return Icons.shopping_cart;
+        return Icons.shopping_basket_rounded;
+      case 'medicine_seller':
+        return Icons.medical_services_rounded;
       default:
-        return Icons.person;
+        return Icons.person_rounded;
     }
   }
 
-  Color _getRoleColor(String role) {
+  List<Color> _getRoleGradient(String role) {
     switch (role.toLowerCase()) {
       case 'farmer':
-        return Colors.green;
+        return AppConstants.primaryGradient;
       case 'buyer':
-        return Colors.blue;
+        return AppConstants.sunsetGradient;
+      case 'medicine_seller':
+        return AppConstants.purpleGradient;
       default:
-        return const Color(AppConstants.primaryColorValue);
+        return AppConstants.primaryGradient;
     }
   }
 }

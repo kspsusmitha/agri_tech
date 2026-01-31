@@ -1,48 +1,112 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../utils/constants.dart';
+import '../../services/billing_service.dart';
+import '../../models/transaction_model.dart';
+import '../../services/medicine_order_service.dart';
+import '../../models/medicine_order_model.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class TransactionsScreen extends StatelessWidget {
   const TransactionsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final BillingService billingService = BillingService();
+    final MedicineOrderService medOrderService = MedicineOrderService();
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Transactions'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {},
+        title: Text(
+          'Transactions',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+      ),
+      body: Stack(
+        children: [
+          const GradientBackground(colors: AppConstants.purpleGradient),
+          SafeArea(
+            child: StreamBuilder<List<dynamic>>(
+              stream: billingService.streamAllTransactions().map(
+                (list) => list as List<dynamic>,
+              ),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                }
+
+                return StreamBuilder<List<MedicineOrderModel>>(
+                  stream: medOrderService.streamAllOrders(),
+                  builder: (context, medSnapshot) {
+                    final transactions = snapshot.data ?? [];
+                    final medOrders = medSnapshot.data ?? [];
+
+                    final combined = [...transactions, ...medOrders];
+                    combined.sort((a, b) {
+                      final dateA = a is TransactionModel
+                          ? a.timestamp
+                          : (a as MedicineOrderModel).createdAt;
+                      final dateB = b is TransactionModel
+                          ? b.timestamp
+                          : (b as MedicineOrderModel).createdAt;
+                      return dateB.compareTo(dateA);
+                    });
+
+                    if (combined.isEmpty) {
+                      return Center(
+                        child: Text(
+                          'No transactions found.',
+                          style: GoogleFonts.inter(color: Colors.white70),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: combined.length,
+                      itemBuilder: (context, index) {
+                        final item = combined[index];
+                        if (item is TransactionModel) {
+                          return _buildTransactionCard(
+                            orderId: item.id,
+                            buyerName: item.buyerName,
+                            farmerName: item.farmerName,
+                            amount: item.amount,
+                            status: item.status,
+                            date: item.timestamp,
+                            type: 'Product',
+                          );
+                        } else {
+                          final order = item as MedicineOrderModel;
+                          return _buildTransactionCard(
+                            orderId: order.id,
+                            buyerName: order.farmerName,
+                            farmerName: order.sellerId,
+                            amount: order.totalAmount,
+                            status: order.status,
+                            date: order.createdAt,
+                            type: 'Medicine',
+                          );
+                        }
+                      },
+                    );
+                  },
+                );
+              },
+            ),
           ),
         ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: 10, // Placeholder
-        itemBuilder: (context, index) {
-          return _buildTransactionCard(
-            orderId: 'ORD-${1000 + index}',
-            buyerName: 'Buyer ${index + 1}',
-            farmerName: 'Farmer ${index + 1}',
-            amount: 250.0 + (index * 50),
-            status: _getStatus(index),
-            date: DateTime.now().subtract(Duration(days: index)),
-          );
-        },
-      ),
     );
-  }
-
-  String _getStatus(int index) {
-    final statuses = [
-      AppConstants.orderDelivered,
-      AppConstants.orderShipped,
-      AppConstants.orderProcessing,
-      AppConstants.orderApproved,
-      AppConstants.orderPending,
-    ];
-    return statuses[index % statuses.length];
   }
 
   Widget _buildTransactionCard({
@@ -52,103 +116,140 @@ class TransactionsScreen extends StatelessWidget {
     required double amount,
     required String status,
     required DateTime date,
+    required String type,
   }) {
     Color statusColor = _getStatusColor(status);
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  orderId,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    status.toUpperCase(),
-                    style: TextStyle(
-                      color: statusColor,
-                      fontSize: 10,
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: GlassContainer(
+        borderRadius: 24,
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    '#${orderId.substring(orderId.length - 8).toUpperCase()}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Buyer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: statusColor.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      '$type | ${status.toUpperCase()}',
+                      style: GoogleFonts.inter(
+                        color: statusColor,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'BUYER',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: Colors.white38,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
                         ),
-                      ),
-                      Text(
-                        buyerName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Farmer',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
+                        const SizedBox(height: 4),
+                        Text(
+                          buyerName,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
-                      ),
-                      Text(
-                        farmerName,
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  DateFormat('MMM d, y').format(date),
-                  style: TextStyle(color: Colors.grey[600]),
-                ),
-                Text(
-                  '\$${amount.toStringAsFixed(2)}',
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Color(AppConstants.primaryColorValue),
+                  Container(
+                    height: 30,
+                    width: 1,
+                    color: Colors.white12,
+                    margin: const EdgeInsets.symmetric(horizontal: 15),
                   ),
-                ),
-              ],
-            ),
-          ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PARTNER',
+                          style: GoogleFonts.inter(
+                            fontSize: 10,
+                            color: Colors.white38,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          farmerName,
+                          style: GoogleFonts.inter(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Divider(color: Colors.white12, height: 1),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    DateFormat('MMM d, y • HH:mm').format(date),
+                    style: GoogleFonts.inter(
+                      color: Colors.white54,
+                      fontSize: 13,
+                    ),
+                  ),
+                  Text(
+                    '₹${amount.toStringAsFixed(2)}',
+                    style: GoogleFonts.outfit(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -157,16 +258,15 @@ class TransactionsScreen extends StatelessWidget {
   Color _getStatusColor(String status) {
     switch (status) {
       case AppConstants.orderDelivered:
-        return Colors.green;
+        return Colors.greenAccent;
       case AppConstants.orderShipped:
-        return Colors.blue;
+        return Colors.blueAccent;
       case AppConstants.orderProcessing:
-        return Colors.orange;
+        return Colors.orangeAccent;
       case AppConstants.orderApproved:
-        return Colors.purple;
+        return Colors.purpleAccent;
       default:
-        return Colors.grey;
+        return Colors.white70;
     }
   }
 }
-

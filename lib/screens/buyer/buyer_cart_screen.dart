@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/cart_service.dart';
+import '../../services/session_service.dart';
+import '../../services/order_service.dart';
+import '../../models/order_model.dart';
 import 'buyer_orders_screen.dart';
+import 'dart:convert';
 
 class BuyerCartScreen extends StatefulWidget {
   const BuyerCartScreen({super.key});
@@ -10,35 +15,12 @@ class BuyerCartScreen extends StatefulWidget {
 }
 
 class _BuyerCartScreenState extends State<BuyerCartScreen> {
-  final List<Map<String, dynamic>> _cartItems = [
-    {
-      'id': '1',
-      'name': 'Fresh Tomatoes',
-      'price': 2.50,
-      'quantity': 2,
-      'unit': 'kg',
-      'farmer': 'Farmer 1',
-    },
-    {
-      'id': '2',
-      'name': 'Organic Wheat',
-      'price': 1.80,
-      'quantity': 5,
-      'unit': 'kg',
-      'farmer': 'Farmer 2',
-    },
-    {
-      'id': '3',
-      'name': 'Sweet Corn',
-      'price': 3.00,
-      'quantity': 3,
-      'unit': 'piece',
-      'farmer': 'Farmer 1',
-    },
-  ];
+  final CartService _cartService = CartService();
+  final OrderService _orderService = OrderService();
+  final String _buyerId = SessionService().user?.id ?? 'guest';
 
-  double get _totalAmount {
-    return _cartItems.fold(
+  double _calculateTotal(List<Map<String, dynamic>> items) {
+    return items.fold(
       0.0,
       (sum, item) => sum + (item['price'] * item['quantity']),
     );
@@ -47,11 +29,18 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Shopping Cart'),
-      ),
-      body: _cartItems.isEmpty
-          ? Center(
+      appBar: AppBar(title: const Text('Shopping Cart')),
+      body: StreamBuilder<List<Map<String, dynamic>>>(
+        stream: _cartService.streamCartItems(_buyerId),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final cartItems = snapshot.data ?? [];
+
+          if (cartItems.isEmpty) {
+            return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -67,21 +56,25 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                   ),
                 ],
               ),
-            )
-          : Column(
-              children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _cartItems.length,
-                    itemBuilder: (context, index) {
-                      return _buildCartItem(_cartItems[index]);
-                    },
-                  ),
+            );
+          }
+
+          return Column(
+            children: [
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: cartItems.length,
+                  itemBuilder: (context, index) {
+                    return _buildCartItem(cartItems[index]);
+                  },
                 ),
-                _buildCheckoutSection(),
-              ],
-            ),
+              ),
+              _buildCheckoutSection(cartItems),
+            ],
+          );
+        },
+      ),
     );
   }
 
@@ -99,7 +92,15 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                 color: Colors.grey[200],
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(Icons.image, color: Colors.grey),
+              child: item['imageBase64'] != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        base64Decode(item['imageBase64']),
+                        fit: BoxFit.cover,
+                      ),
+                    )
+                  : const Icon(Icons.image, color: Colors.grey),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -115,7 +116,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'By ${item['farmer']}',
+                    'By ${item['farmerName']}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const SizedBox(height: 8),
@@ -123,7 +124,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        '\$${item['price'].toStringAsFixed(2)} / ${item['unit']}',
+                        '₹${item['price'].toStringAsFixed(2)} / ${item['unit']}',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Color(AppConstants.primaryColorValue),
@@ -134,13 +135,11 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                           IconButton(
                             icon: const Icon(Icons.remove_circle_outline),
                             onPressed: () {
-                              setState(() {
-                                if (item['quantity'] > 1) {
-                                  item['quantity']--;
-                                } else {
-                                  _cartItems.remove(item);
-                                }
-                              });
+                              _cartService.updateQuantity(
+                                _buyerId,
+                                item['id'],
+                                item['quantity'] - 1,
+                              );
                             },
                           ),
                           Text(
@@ -153,9 +152,11 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                           IconButton(
                             icon: const Icon(Icons.add_circle_outline),
                             onPressed: () {
-                              setState(() {
-                                item['quantity']++;
-                              });
+                              _cartService.updateQuantity(
+                                _buyerId,
+                                item['id'],
+                                item['quantity'] + 1,
+                              );
                             },
                           ),
                         ],
@@ -168,9 +169,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () {
-                setState(() {
-                  _cartItems.remove(item);
-                });
+                _cartService.removeFromCart(_buyerId, item['id']);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('${item['name']} removed from cart')),
                 );
@@ -182,7 +181,8 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
     );
   }
 
-  Widget _buildCheckoutSection() {
+  Widget _buildCheckoutSection(List<Map<String, dynamic>> items) {
+    final total = _calculateTotal(items);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -203,13 +203,10 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
             children: [
               const Text(
                 'Total Amount',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               Text(
-                '\$${_totalAmount.toStringAsFixed(2)}',
+                '₹${total.toStringAsFixed(2)}',
                 style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -223,7 +220,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () {
-                _showCheckoutDialog();
+                _showCheckoutDialog(items, total);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(AppConstants.primaryColorValue),
@@ -241,7 +238,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
     );
   }
 
-  void _showCheckoutDialog() {
+  void _showCheckoutDialog(List<Map<String, dynamic>> items, double total) {
     final addressController = TextEditingController();
     final phoneController = TextEditingController();
 
@@ -282,7 +279,7 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
                   children: [
                     const Text('Total:'),
                     Text(
-                      '\$${_totalAmount.toStringAsFixed(2)}',
+                      '₹${total.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -300,24 +297,54 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (addressController.text.isNotEmpty &&
                   phoneController.text.isNotEmpty) {
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Order placed successfully!'),
-                    backgroundColor: Colors.green,
-                  ),
+                // In a real app, we'd group items by farmer and create multiple orders
+                // or handle it in the backend. Here we'll create a single order for simplicity
+                // but use the first farmerId as primary.
+
+                final orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+                final order = OrderModel(
+                  id: orderId,
+                  buyerId: _buyerId,
+                  farmerId: items.first['farmerId'],
+                  items: items
+                      .map(
+                        (i) => OrderItem(
+                          productId: i['id'],
+                          productName: i['name'],
+                          quantity: i['quantity'],
+                          price: i['price'].toDouble(),
+                        ),
+                      )
+                      .toList(),
+                  totalAmount: total,
+                  shippingAddress: addressController.text,
+                  createdAt: DateTime.now(),
                 );
-                setState(() {
-                  _cartItems.clear();
-                });
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const BuyerOrdersScreen(),
-                  ),
+
+                await _orderService.placeOrder(order);
+                await _cartService.clearCart(_buyerId);
+
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Order placed successfully!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const BuyerOrdersScreen(),
+                    ),
+                  );
+                }
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please fill all details')),
                 );
               }
             },
@@ -328,4 +355,3 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
     );
   }
 }
-

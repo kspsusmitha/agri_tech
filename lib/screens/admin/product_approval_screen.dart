@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/product_service.dart';
+import '../../models/product_model.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'dart:convert';
 
 class ProductApprovalScreen extends StatefulWidget {
   const ProductApprovalScreen({super.key});
@@ -9,31 +14,81 @@ class ProductApprovalScreen extends StatefulWidget {
 }
 
 class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
+  final ProductService _productService = ProductService();
   String _selectedFilter = 'Pending';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Product Approval'),
+        title: Text(
+          'Product Decisons',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
       ),
-      body: Column(
-        children: [
-          _buildFilterBar(),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: 5, // Placeholder
-              itemBuilder: (context, index) {
-                return _buildProductCard(
-                  productName: 'Product ${index + 1}',
-                  farmerName: 'Farmer ${index + 1}',
-                  price: 100.0 + (index * 50),
-                  quantity: 50 - (index * 5),
-                  status: _selectedFilter.toLowerCase(),
-                );
-              },
+      body: GradientBackground(
+        colors: AppConstants.purpleGradient,
+        child: Column(
+          children: [
+            const SizedBox(height: kToolbarHeight + 40),
+            _buildFilterBar(),
+            Expanded(
+              child: StreamBuilder<List<ProductModel>>(
+                stream: _productService.streamAllProducts(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white24),
+                    );
+                  }
+
+                  final allProducts = snapshot.data ?? [];
+                  final filteredProducts = allProducts.where((p) {
+                    return p.status.toLowerCase() ==
+                        _selectedFilter.toLowerCase();
+                  }).toList();
+
+                  if (filteredProducts.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      final product = filteredProducts[index];
+                      return _buildProductCard(product);
+                    },
+                  );
+                },
+              ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.assignment_turned_in_rounded,
+            size: 80,
+            color: Colors.white10,
+          ),
+          const SizedBox(height: 20),
+          Text(
+            'No $_selectedFilter products',
+            style: GoogleFonts.inter(color: Colors.white30, fontSize: 18),
           ),
         ],
       ),
@@ -42,59 +97,96 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
 
   Widget _buildFilterBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          Expanded(
-            child: SegmentedButton<String>(
-              segments: const [
-                ButtonSegment(value: 'Pending', label: Text('Pending')),
-                ButtonSegment(value: 'Approved', label: Text('Approved')),
-                ButtonSegment(value: 'Rejected', label: Text('Rejected')),
-              ],
-              selected: {_selectedFilter},
-              onSelectionChanged: (Set<String> newSelection) {
-                setState(() {
-                  _selectedFilter = newSelection.first;
-                });
-              },
-            ),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(4),
+        borderRadius: 16,
+        child: Row(
+          children: [
+            _buildFilterTab('Pending'),
+            _buildFilterTab('Approved'),
+            _buildFilterTab('Rejected'),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildProductCard({
-    required String productName,
-    required String farmerName,
-    required double price,
-    required int quantity,
-    required String status,
-  }) {
-    Color statusColor = status == AppConstants.productApproved
-        ? Colors.green
-        : status == AppConstants.productRejected
-            ? Colors.red
-            : Colors.orange;
+  Widget _buildFilterTab(String label) {
+    bool isSelected = _selectedFilter == label;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedFilter = label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected
+                ? Colors.white.withOpacity(0.1)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: isSelected ? Colors.white : Colors.white38,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      child: Padding(
+  Widget _buildProductCard(ProductModel product) {
+    Color statusColor = product.status == AppConstants.productApproved
+        ? Colors.greenAccent
+        : product.status == AppConstants.productRejected
+        ? Colors.redAccent
+        : Colors.orangeAccent;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: GlassContainer(
         padding: const EdgeInsets.all(16),
+        borderRadius: 24,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
+                // Product Image
                 Container(
-                  width: 80,
-                  height: 80,
+                  width: 90,
+                  height: 90,
                   decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(8),
+                    color: Colors.white.withOpacity(0.05),
+                    borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Icon(Icons.image, color: Colors.grey[600]),
+                  child: product.imageBase64 != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child:
+                              product.imageBase64!.startsWith('data:image') ||
+                                  product.imageBase64!.length > 100
+                              ? Image.memory(
+                                  base64Decode(
+                                    product.imageBase64!.split(',').last,
+                                  ),
+                                  fit: BoxFit.cover,
+                                )
+                              : Image.network(
+                                  product.imageBase64!,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) =>
+                                      const Icon(
+                                        Icons.image_rounded,
+                                        color: Colors.white10,
+                                      ),
+                                ),
+                        )
+                      : const Icon(Icons.image_rounded, color: Colors.white10),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -102,32 +194,51 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        productName,
-                        style: const TextStyle(
+                        product.name,
+                        style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
+                          color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        'By: $farmerName',
-                        style: TextStyle(color: Colors.grey[600]),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.person_pin_rounded,
+                            size: 14,
+                            color: Colors.white38,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              product.farmerName,
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 13,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Text(
-                            '\$${price.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 16,
+                            '₹${product.price}',
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color(AppConstants.primaryColorValue),
+                              color: Colors.white,
                             ),
                           ),
-                          const SizedBox(width: 16),
                           Text(
-                            'Qty: $quantity kg',
-                            style: TextStyle(color: Colors.grey[600]),
+                            ' / ${product.unit}',
+                            style: GoogleFonts.inter(
+                              color: Colors.white38,
+                              fontSize: 12,
+                            ),
                           ),
                         ],
                       ),
@@ -136,47 +247,84 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                status.toUpperCase(),
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10, height: 1),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: statusColor.withOpacity(0.2)),
+                  ),
+                  child: Text(
+                    product.status.toUpperCase(),
+                    style: GoogleFonts.inter(
+                      color: statusColor,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ),
+                const Spacer(),
+                Text(
+                  'Stock: ${product.quantity} ${product.unit}',
+                  style: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
+                ),
+              ],
             ),
-            if (status == AppConstants.productPending) ...[
-              const SizedBox(height: 12),
+            if (product.status == AppConstants.productPending) ...[
+              const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton(
-                      onPressed: () {
-                        _showApprovalDialog(context, productName, true);
-                      },
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.green,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          _showApprovalDialog(context, product, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.greenAccent.withOpacity(0.8),
+                        foregroundColor: Colors.black87,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Approve'),
+                      child: Text(
+                        'APPROVE',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: () {
-                        _showApprovalDialog(context, productName, false);
-                      },
+                      onPressed: () =>
+                          _showApprovalDialog(context, product, false),
                       style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.red,
+                        foregroundColor: Colors.redAccent,
+                        side: const BorderSide(color: Colors.redAccent),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
-                      child: const Text('Reject'),
+                      child: Text(
+                        'REJECT',
+                        style: GoogleFonts.inter(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -190,25 +338,43 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
 
   void _showApprovalDialog(
     BuildContext context,
-    String productName,
+    ProductModel product,
     bool approve,
   ) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(approve ? 'Approve Product' : 'Reject Product'),
+        backgroundColor: const Color(0xff1a0b2e),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          approve ? 'Approve Product' : 'Reject Product',
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Text(
           approve
-              ? 'Are you sure you want to approve "$productName"?'
-              : 'Are you sure you want to reject "$productName"?',
+              ? 'Are you sure you want to approve "${product.name}"?'
+              : 'Are you sure you want to reject "${product.name}"?',
+          style: GoogleFonts.inter(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            child: const Text(
+              'CANCEL',
+              style: TextStyle(color: Colors.white38),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
+              _productService.updateProductStatus(
+                product.id,
+                approve
+                    ? AppConstants.productApproved
+                    : AppConstants.productRejected,
+              );
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -217,17 +383,21 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                         ? 'Product approved successfully'
                         : 'Product rejected',
                   ),
+                  backgroundColor: approve ? Colors.green : Colors.red,
                 ),
               );
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: approve ? Colors.green : Colors.red,
+              backgroundColor: approve ? Colors.greenAccent : Colors.redAccent,
+              foregroundColor: approve ? Colors.black87 : Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
-            child: Text(approve ? 'Approve' : 'Reject'),
+            child: Text(approve ? 'APPROVE' : 'REJECT'),
           ),
         ],
       ),
     );
   }
 }
-

@@ -1,40 +1,79 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../utils/constants.dart';
+import '../../services/session_service.dart';
+import '../../services/admin_service.dart';
+import '../../services/product_service.dart';
+import '../../models/product_model.dart';
 import '../role_selection_screen.dart';
 import 'user_management_screen.dart';
 import 'product_approval_screen.dart';
 import 'transactions_screen.dart';
 import 'complaints_screen.dart';
+import 'content_management_screen.dart';
+import 'disease_monitoring_screen.dart';
+import 'community_moderation_screen.dart';
+import 'report_analytics_screen.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final AdminService _adminService = AdminService();
+  final ProductService _productService = ProductService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Admin Dashboard'),
+        title: Text(
+          'Admin Nexus',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications),
+            icon: const Icon(
+              Icons.notifications_none_rounded,
+              color: Colors.white,
+            ),
             onPressed: () {},
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+            color: const Color(0xff1a0b2e),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog(context);
-              }
+              if (value == 'logout') _showLogoutDialog(context);
             },
             itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
+              PopupMenuItem<String>(
                 value: 'logout',
                 child: Row(
                   children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Logout'),
+                    const Icon(
+                      Icons.logout_rounded,
+                      color: Colors.redAccent,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Logout',
+                      style: GoogleFonts.inter(color: Colors.redAccent),
+                    ),
                   ],
                 ),
               ),
@@ -42,120 +81,196 @@ class AdminDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeCard(context),
-            const SizedBox(height: 24),
-            _buildStatsRow(context),
-            const SizedBox(height: 24),
-            const Text(
-              'Quick Actions',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildQuickActionsGrid(context),
-            const SizedBox(height: 24),
-            _buildRecentActivity(context),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildWelcomeCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Color(AppConstants.primaryColorValue),
-              child: Icon(Icons.person, color: Colors.white, size: 30),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+      body: Stack(
+        children: [
+          const GradientBackground(colors: AppConstants.purpleGradient),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Welcome, Admin',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: GlassContainer(
+                      padding: EdgeInsets.zero,
+                      borderRadius: 24,
+                      child: const ImageSlider(
+                        imageUrls: [
+                          'https://images.unsplash.com/photo-1596253410522-a7e8ea6075bc?auto=format&fit=crop&q=80&w=800',
+                          'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    DateFormat('EEEE, MMMM d, y').format(DateTime.now()),
-                    style: TextStyle(color: Colors.grey[600]),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'System Intelligence',
+                          style: GoogleFonts.outfit(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Real-time network oversight & metrics.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white60,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildStatsStream(),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: Text(
+                      'Management Console',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildQuickActionsGrid(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildRecentActivityStream(),
+                  ),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 
-  Widget _buildStatsRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildStatCard(
-            'Total Users',
-            '150',
-            Icons.people,
-            Colors.blue,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildStatCard(
-            'Pending Products',
-            '23',
-            Icons.inventory_2,
-            Colors.orange,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildStatsStream() {
+    return StreamBuilder<Map<String, int>>(
+      stream: _adminService.streamSystemStats(),
+      builder: (context, snapshot) {
+        final stats =
+            snapshot.data ??
+            {
+              'totalFarmers': 0,
+              'totalBuyers': 0,
+              'totalMedicineSellers': 0,
+              'pendingProducts': 0,
+              'totalOrders': 0,
+              'totalMedicineOrders': 0,
+            };
+        final totalUsers =
+            (stats['totalFarmers'] ?? 0) + (stats['totalBuyers'] ?? 0);
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        return Row(
           children: [
-            Icon(icon, color: color, size: 28),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: color,
+            Expanded(
+              child: _buildGlassStatCard(
+                'Users',
+                totalUsers.toString(),
+                Icons.people_rounded,
+                [const Color(0xff4facfe), const Color(0xff00f2fe)],
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildGlassStatCard(
+                'Sellers',
+                (stats['totalMedicineSellers'] ?? 0).toString(),
+                Icons.medical_services_rounded,
+                [const Color(0xfff093fb), const Color(0xfff5576c)],
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _buildGlassStatCard(
+                'Orders',
+                (stats['totalMedicineOrders'] ?? 0).toString(),
+                Icons.medication_rounded,
+                [const Color(0xff43e97b), const Color(0xff38f9d7)],
               ),
             ),
           ],
-        ),
+        );
+      },
+    );
+  }
+
+  Widget _buildGlassStatCard(
+    String title,
+    String value,
+    IconData icon,
+    List<Color> gradient,
+  ) {
+    return GlassContainer(
+      padding: const EdgeInsets.all(16),
+      borderRadius: 20,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient.map((c) => c.withOpacity(0.8)).toList(),
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: gradient.first.withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(icon, color: Colors.white, size: 20),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: GoogleFonts.outfit(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          Text(
+            title,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: Colors.white38,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -165,95 +280,109 @@ class AdminDashboardScreen extends StatelessWidget {
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisSpacing: 12,
-      mainAxisSpacing: 12,
-      childAspectRatio: 1.5,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'User Management',
-          Icons.people_outline,
-          Colors.blue,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const UserManagementScreen(),
-              ),
-            );
-          },
+          'User base',
+          Icons.people_outline_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const UserManagementScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'Product Approval',
-          Icons.check_circle_outline,
-          Colors.green,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProductApprovalScreen(),
-              ),
-            );
-          },
+          'Product Approvals',
+          Icons.verified_user_rounded,
+          AppConstants.primaryGradient,
+          () => _navigateTo(context, const ProductApprovalScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
+          context,
+          'Disease Monitor',
+          Icons.bug_report_rounded,
+          AppConstants.sunsetGradient,
+          () => _navigateTo(context, const DiseaseMonitoringScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Content Management',
+          Icons.auto_stories_rounded,
+          AppConstants.purpleGradient,
+          () => _navigateTo(context, const ContentManagementScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Community Hub',
+          Icons.forum_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const CommunityModerationScreen()),
+        ),
+        _buildActionGlassCard(
           context,
           'Transactions',
-          Icons.receipt_long,
-          Colors.purple,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const TransactionsScreen(),
-              ),
-            );
-          },
+          Icons.receipt_long_rounded,
+          AppConstants.primaryGradient,
+          () => _navigateTo(context, const TransactionsScreen()),
         ),
-        _buildActionCard(
+        _buildActionGlassCard(
           context,
-          'Complaints',
-          Icons.feedback_outlined,
-          Colors.red,
-          () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ComplaintsScreen(),
-              ),
-            );
-          },
+          'Support cases',
+          Icons.feedback_rounded,
+          AppConstants.sunsetGradient,
+          () => _navigateTo(context, const ComplaintsScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'System Analytics',
+          Icons.analytics_rounded,
+          AppConstants.purpleGradient,
+          () => _navigateTo(context, const ReportAnalyticsScreen()),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  Widget _buildActionGlassCard(
     BuildContext context,
     String title,
     IconData icon,
-    Color color,
+    List<Color> gradient,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
+    return GlassContainer(
+      padding: EdgeInsets.zero,
+      borderRadius: 24,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(24),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 32),
-              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 12),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: GoogleFonts.outfit(
                   fontSize: 14,
-                  fontWeight: FontWeight.w500,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -263,50 +392,97 @@ class AdminDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildRecentActivity(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Recent Activity',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
+  Widget _buildRecentActivityStream() {
+    return StreamBuilder<List<ProductModel>>(
+      stream: _productService.streamAllProducts(),
+      builder: (context, snapshot) {
+        final products = snapshot.data ?? [];
+        final recentProducts = products.take(5).toList();
+
+        return GlassContainer(
+          padding: const EdgeInsets.all(24),
+          borderRadius: 28,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Real-time activity',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.bolt_rounded,
+                    color: Colors.amberAccent,
+                    size: 20,
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 16),
-            _buildActivityItem('New product submitted', '2 hours ago'),
-            _buildActivityItem('User complaint received', '5 hours ago'),
-            _buildActivityItem('Transaction completed', '1 day ago'),
-          ],
-        ),
-      ),
+              const SizedBox(height: 20),
+              if (recentProducts.isEmpty)
+                Text(
+                  'No recent activity in the network',
+                  style: GoogleFonts.inter(color: Colors.white30, fontSize: 13),
+                )
+              else
+                ...recentProducts.map(
+                  (p) => _buildActivityItemGlass(
+                    '${p.name} listed for approval',
+                    DateFormat('h:mm a').format(p.createdAt),
+                    p.status == AppConstants.productPending,
+                  ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildActivityItem(String title, String time) {
+  Widget _buildActivityItemGlass(String title, String time, bool isUrgent) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Container(
             width: 8,
             height: 8,
-            decoration: const BoxDecoration(
-              color: Color(AppConstants.primaryColorValue),
+            decoration: BoxDecoration(
+              color: isUrgent ? Colors.orangeAccent : Colors.white24,
               shape: BoxShape.circle,
+              boxShadow: isUrgent
+                  ? [
+                      BoxShadow(
+                        color: Colors.orangeAccent.withOpacity(0.3),
+                        blurRadius: 4,
+                      ),
+                    ]
+                  : null,
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
-            child: Text(title),
+            child: Text(
+              title,
+              style: GoogleFonts.inter(
+                color: Colors.white.withOpacity(0.9),
+                fontSize: 13,
+                fontWeight: isUrgent ? FontWeight.w500 : FontWeight.normal,
+              ),
+            ),
           ),
           Text(
             time,
-            style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            style: GoogleFonts.inter(
+              color: Colors.white24,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -318,48 +494,53 @@ class AdminDashboardScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          backgroundColor: const Color(0xff1a0b2e),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(24),
+          ),
+          title: Text(
+            'End Session',
+            style: GoogleFonts.outfit(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to exit the admin dashboard?',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
+              child: const Text(
+                'CANCEL',
+                style: TextStyle(color: Colors.white38),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _handleLogout(context);
+                Navigator.pop(context);
+                SessionService().clearUser();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectionScreen(),
+                  ),
+                  (route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.redAccent,
                 foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Logout'),
+              child: const Text('LOGOUT'),
             ),
           ],
         );
       },
     );
   }
-
-  void _handleLogout(BuildContext context) {
-    // Navigate back to role selection screen
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RoleSelectionScreen(),
-      ),
-      (route) => false, // Remove all previous routes
-    );
-
-    // Show logout success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 }
-

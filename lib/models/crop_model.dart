@@ -4,7 +4,11 @@ class CropModel {
   final String cropType;
   final DateTime plantingDate;
   final String? description;
-  final String phase; // Planting, Germination, Vegetative, Flowering, Fruiting, Harvesting
+  final String
+  phase; // Planting, Germination, Vegetative, Flowering, Fruiting, Harvesting
+  final Map<String, bool>?
+  notifications; // e.g. {'sowing': true, 'watering': true}
+  final Map<String, DateTime>? lifecycleSchedule;
   final DateTime? createdAt;
 
   CropModel({
@@ -14,6 +18,8 @@ class CropModel {
     required this.plantingDate,
     this.description,
     this.phase = 'Planting',
+    this.notifications,
+    this.lifecycleSchedule,
     this.createdAt,
   });
 
@@ -25,6 +31,10 @@ class CropModel {
       'plantingDate': plantingDate.toIso8601String(),
       'description': description,
       'phase': phase,
+      'notifications': notifications,
+      'lifecycleSchedule': lifecycleSchedule?.map(
+        (key, value) => MapEntry(key, value.toIso8601String()),
+      ),
       'createdAt': createdAt?.toIso8601String(),
     };
   }
@@ -37,10 +47,17 @@ class CropModel {
       plantingDate: DateTime.parse(json['plantingDate']),
       description: json['description'],
       phase: json['phase'] ?? 'Planting',
+      notifications: json['notifications'] != null
+          ? Map<String, bool>.from(json['notifications'])
+          : null,
+      lifecycleSchedule: json['lifecycleSchedule'] != null
+          ? (json['lifecycleSchedule'] as Map).map(
+              (key, value) => MapEntry(key.toString(), DateTime.parse(value)),
+            )
+          : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : null,
     );
   }
 }
-

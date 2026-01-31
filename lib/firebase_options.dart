@@ -48,6 +48,7 @@ class DefaultFirebaseOptions {
     authDomain: 'plantdisease-e827d.firebaseapp.com',
     storageBucket: 'plantdisease-e827d.firebasestorage.app',
     measurementId: 'G-Y8HHNJKYDS',
+    databaseURL: 'https://plantdisease-e827d.firebaseio.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -56,6 +57,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '317214982580',
     projectId: 'plantdisease-e827d',
     storageBucket: 'plantdisease-e827d.firebasestorage.app',
+    databaseURL: 'https://plantdisease-e827d.firebaseio.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
@@ -64,6 +66,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '317214982580',
     projectId: 'plantdisease-e827d',
     storageBucket: 'plantdisease-e827d.firebasestorage.app',
+    databaseURL: 'https://plantdisease-e827d.firebaseio.com',
     iosBundleId: 'com.example.farmTech',
   );
 
@@ -73,6 +76,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '317214982580',
     projectId: 'plantdisease-e827d',
     storageBucket: 'plantdisease-e827d.firebasestorage.app',
+    databaseURL: 'https://plantdisease-e827d.firebaseio.com',
     iosBundleId: 'com.example.farmTech',
   );
 
@@ -84,5 +88,6 @@ class DefaultFirebaseOptions {
     authDomain: 'plantdisease-e827d.firebaseapp.com',
     storageBucket: 'plantdisease-e827d.firebasestorage.app',
     measurementId: 'G-XKD4DREZV7',
+    databaseURL: 'https://plantdisease-e827d.firebaseio.com',
   );
 }

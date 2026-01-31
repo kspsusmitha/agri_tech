@@ -1,63 +1,85 @@
 import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
+import '../../services/session_service.dart';
+import '../../services/cart_service.dart';
 import '../role_selection_screen.dart';
 import 'product_browse_screen.dart';
 import 'buyer_cart_screen.dart';
 import 'buyer_orders_screen.dart';
+import '../../widgets/glass_widgets.dart';
+import 'package:google_fonts/google_fonts.dart';
 
-class BuyerDashboardScreen extends StatelessWidget {
+class BuyerDashboardScreen extends StatefulWidget {
   const BuyerDashboardScreen({super.key});
+
+  @override
+  State<BuyerDashboardScreen> createState() => _BuyerDashboardScreenState();
+}
+
+class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
+  final CartService _cartService = CartService();
+  final String _buyerId = SessionService().user?.id ?? 'guest';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: const Text('Buyer Dashboard'),
+        title: Text(
+          'Buyer Hub',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         actions: [
-          IconButton(
-            icon: Stack(
-              children: [
-                const Icon(Icons.shopping_cart),
-                Positioned(
-                  right: 0,
-                  top: 0,
-                  child: Container(
-                    padding: const EdgeInsets.all(2),
-                    decoration: const BoxDecoration(
-                      color: Colors.red,
-                      shape: BoxShape.circle,
+          StreamBuilder<List<Map<String, dynamic>>>(
+            stream: _cartService.streamCartItems(_buyerId),
+            builder: (context, snapshot) {
+              final cartItemCount = snapshot.data?.length ?? 0;
+              return IconButton(
+                icon: Stack(
+                  children: [
+                    const Icon(
+                      Icons.shopping_cart_rounded,
+                      color: Colors.white,
                     ),
-                    constraints: const BoxConstraints(
-                      minWidth: 16,
-                      minHeight: 16,
-                    ),
-                    child: const Text(
-                      '3',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
+                    if (cartItemCount > 0)
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(2),
+                          decoration: const BoxDecoration(
+                            color: Colors.redAccent,
+                            shape: BoxShape.circle,
+                          ),
+                          constraints: const BoxConstraints(
+                            minWidth: 14,
+                            minHeight: 14,
+                          ),
+                          child: Text(
+                            '$cartItemCount',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
                       ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const BuyerCartScreen(),
-                ),
+                onPressed: () => _navigateTo(context, const BuyerCartScreen()),
               );
             },
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
             onSelected: (value) {
-              if (value == 'logout') {
-                _showLogoutDialog(context);
-              }
+              if (value == 'logout') _showLogoutDialog(context);
             },
             itemBuilder: (BuildContext context) => [
               const PopupMenuItem<String>(
@@ -74,208 +96,196 @@ class BuyerDashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildWelcomeCard(context),
-            const SizedBox(height: 24),
-            _buildQuickActions(context),
-            const SizedBox(height: 24),
-            _buildFeaturedProducts(context),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Shop',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.receipt),
-            label: 'Orders',
-          ),
-        ],
-        onTap: (index) {
-          if (index == 1) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ProductBrowseScreen(),
-              ),
-            );
-          } else if (index == 2) {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const BuyerOrdersScreen(),
-              ),
-            );
-          }
-        },
-      ),
-    );
-  }
-
-  Widget _buildWelcomeCard(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
-          children: [
-            const CircleAvatar(
-              radius: 30,
-              backgroundColor: Color(AppConstants.primaryColorValue),
-              child: Icon(Icons.person, color: Colors.white, size: 30),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
+      body: Stack(
+        children: [
+          const GradientBackground(colors: AppConstants.sunsetGradient),
+          SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Welcome, Buyer',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
+                  const SizedBox(height: 10),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: ImageSlider(
+                      imageUrls: [
+                        'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
+                        'https://images.unsplash.com/photo-1488459711615-59b882310f84?auto=format&fit=crop&q=80&w=800',
+                        'https://images.unsplash.com/photo-1464226184884-fa280b67c35e?auto=format&fit=crop&q=80&w=800',
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Fresh produce at your doorstep',
-                    style: TextStyle(color: Colors.grey[600]),
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Healthy Choice ✨',
+                          style: GoogleFonts.outfit(
+                            fontSize: 26,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          'Farm-fresh produce delivered to you.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildQuickActions(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Featured Categories',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  _buildFeaturedProducts(context),
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: _buildGlassBottomNav(context),
+    );
+  }
+
+  Widget _buildGlassBottomNav(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      child: GlassContainer(
+        borderRadius: 30,
+        child: BottomNavigationBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: Colors.white,
+          unselectedItemColor: Colors.white54,
+          currentIndex: 0,
+          items: const [
+            BottomNavigationBarItem(
+              icon: Icon(Icons.home_rounded),
+              label: 'Home',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.shopping_bag_rounded),
+              label: 'Shop',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.receipt_rounded),
+              label: 'Orders',
+            ),
           ],
+          onTap: (index) {
+            if (index == 1)
+              _navigateTo(context, const ProductBrowseScreen());
+            else if (index == 2)
+              _navigateTo(context, const BuyerOrdersScreen());
+          },
         ),
       ),
     );
   }
 
   Widget _buildQuickActions(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return GridView.count(
+      crossAxisCount: 2,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
+      childAspectRatio: 1.4,
       children: [
-        const Text(
-          'Quick Actions',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        _buildActionGlassCard(
+          context,
+          'Explore Shop',
+          Icons.shopping_basket_rounded,
+          AppConstants.primaryGradient,
+          () => _navigateTo(context, const ProductBrowseScreen()),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Browse Products',
-                Icons.shopping_bag,
-                Colors.blue,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const ProductBrowseScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'My Cart',
-                Icons.shopping_cart,
-                Colors.orange,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BuyerCartScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+        _buildActionGlassCard(
+          context,
+          'My Cart',
+          Icons.shopping_cart_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const BuyerCartScreen()),
         ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'My Orders',
-                Icons.receipt_long,
-                Colors.green,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BuyerOrdersScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildActionCard(
-                context,
-                'Track Delivery',
-                Icons.local_shipping,
-                Colors.purple,
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BuyerOrdersScreen(),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ],
+        _buildActionGlassCard(
+          context,
+          'Order History',
+          Icons.history_rounded,
+          AppConstants.sunsetGradient,
+          () => _navigateTo(context, const BuyerOrdersScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Track Delivery',
+          Icons.local_shipping_rounded,
+          AppConstants.purpleGradient,
+          () => _navigateTo(context, const BuyerOrdersScreen()),
         ),
       ],
     );
   }
 
-  Widget _buildActionCard(
+  void _navigateTo(BuildContext context, Widget screen) {
+    Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
+  }
+
+  Widget _buildActionGlassCard(
     BuildContext context,
     String title,
     IconData icon,
-    Color color,
+    List<Color> gradient,
     VoidCallback onTap,
   ) {
-    return Card(
-      elevation: 2,
+    return GlassContainer(
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 32),
-              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: gradient),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 28),
+              ),
+              const SizedBox(height: 10),
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
             ],
@@ -286,92 +296,40 @@ class BuyerDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildFeaturedProducts(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(20),
+        child: Column(
           children: [
-            const Text(
-              'Featured Products',
-              style: TextStyle(
+            Icon(Icons.auto_awesome_rounded, color: Colors.amber, size: 40),
+            const SizedBox(height: 16),
+            Text(
+              'Discover Premium Produce',
+              style: GoogleFonts.outfit(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
+                color: Colors.white,
               ),
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const ProductBrowseScreen(),
-                  ),
-                );
-              },
-              child: const Text('View All'),
+            const SizedBox(height: 8),
+            Text(
+              'Click "Explore Shop" to view all available organic products from our local farmers.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
             ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          height: 200,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            itemCount: 5,
-            itemBuilder: (context, index) {
-              return _buildProductCard(index);
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildProductCard(int index) {
-    return Container(
-      width: 150,
-      margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[200],
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(12),
-                  ),
-                ),
-                child: const Center(
-                  child: Icon(Icons.image, size: 48, color: Colors.grey),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () =>
+                  _navigateTo(context, const ProductBrowseScreen()),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white24,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Product ${index + 1}',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '\$${(10 + index * 5).toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: Color(AppConstants.primaryColorValue),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
+              child: const Text('Visit Shop'),
             ),
           ],
         ),
@@ -384,8 +342,12 @@ class BuyerDashboardScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Logout'),
-          content: const Text('Are you sure you want to logout?'),
+          backgroundColor: Colors.grey[900],
+          title: Text('Logout', style: GoogleFonts.outfit(color: Colors.white)),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -393,12 +355,18 @@ class BuyerDashboardScreen extends StatelessWidget {
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                _handleLogout(context);
+                Navigator.pop(context);
+                SessionService().clearUser();
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RoleSelectionScreen(),
+                  ),
+                  (route) => false,
+                );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
+                backgroundColor: Colors.redAccent,
               ),
               child: const Text('Logout'),
             ),
@@ -407,25 +375,4 @@ class BuyerDashboardScreen extends StatelessWidget {
       },
     );
   }
-
-  void _handleLogout(BuildContext context) {
-    // Navigate back to role selection screen
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const RoleSelectionScreen(),
-      ),
-      (route) => false, // Remove all previous routes
-    );
-
-    // Show logout success message
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Logged out successfully'),
-        backgroundColor: Colors.green,
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
 }
-
