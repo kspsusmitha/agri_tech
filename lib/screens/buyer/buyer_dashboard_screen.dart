@@ -20,151 +20,44 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
   final CartService _cartService = CartService();
   final String _buyerId = SessionService().user?.id ?? 'guest';
 
+  int _selectedIndex = 0;
+
+  final List<Color> _bgColors_0 = AppConstants.sunsetGradient;
+  final List<Color> _bgColors_1 = AppConstants.primaryGradient;
+  final List<Color> _bgColors_2 = AppConstants.oceanGradient;
+
+  List<Color> get _currentGradient {
+    switch (_selectedIndex) {
+      case 1:
+        return _bgColors_1;
+      case 2:
+        return _bgColors_2;
+      default:
+        return _bgColors_0;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'Buyer Hub',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: _cartService.streamCartItems(_buyerId),
-            builder: (context, snapshot) {
-              final cartItemCount = snapshot.data?.length ?? 0;
-              return IconButton(
-                icon: Stack(
-                  children: [
-                    const Icon(
-                      Icons.shopping_cart_rounded,
-                      color: Colors.white,
-                    ),
-                    if (cartItemCount > 0)
-                      Positioned(
-                        right: 0,
-                        top: 0,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: const BoxDecoration(
-                            color: Colors.redAccent,
-                            shape: BoxShape.circle,
-                          ),
-                          constraints: const BoxConstraints(
-                            minWidth: 14,
-                            minHeight: 14,
-                          ),
-                          child: Text(
-                            '$cartItemCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                onPressed: () => _navigateTo(context, const BuyerCartScreen()),
-              );
-            },
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
-            onSelected: (value) {
-              if (value == 'logout') _showLogoutDialog(context);
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      extendBody: true,
+      // Only show Main AppBar on Home tab (Index 0) to avoid double AppBars
+      appBar: _selectedIndex == 0 ? _buildHomeAppBar() : null,
       body: Stack(
         children: [
-          const GradientBackground(colors: AppConstants.sunsetGradient),
+          GradientBackground(colors: _currentGradient),
           SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: ImageSlider(
-                      imageUrls: [
-                        'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1488459711615-59b882310f84?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1464226184884-fa280b67c35e?auto=format&fit=crop&q=80&w=800',
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Healthy Choice ✨',
-                          style: GoogleFonts.outfit(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Farm-fresh produce delivered to you.',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildQuickActions(context),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Featured Categories',
-                      style: GoogleFonts.outfit(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  _buildFeaturedProducts(context),
-                  const SizedBox(height: 40),
-                ],
-              ),
+            // If index != 0, we might strictly not need SafeArea if the child screens have their own AppBars/Scaffolds.
+            // However, wrapping in SafeArea is generally safe.
+            top: false,
+            child: IndexedStack(
+              index: _selectedIndex,
+              children: [
+                _buildHomeContent(),
+                const ProductBrowseScreen(), // Ensure this screen handles its own safe area/appbar if needed
+                const BuyerOrdersScreen(),
+              ],
             ),
           ),
         ],
@@ -173,9 +66,149 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
     );
   }
 
+  PreferredSizeWidget _buildHomeAppBar() {
+    return AppBar(
+      title: Text(
+        'Buyer Hub',
+        style: GoogleFonts.outfit(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+      ),
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        StreamBuilder<List<Map<String, dynamic>>>(
+          stream: _cartService.streamCartItems(_buyerId),
+          builder: (context, snapshot) {
+            final cartItemCount = snapshot.data?.length ?? 0;
+            return IconButton(
+              icon: Stack(
+                children: [
+                  const Icon(Icons.shopping_cart_rounded, color: Colors.white),
+                  if (cartItemCount > 0)
+                    Positioned(
+                      right: 0,
+                      top: 0,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 14,
+                          minHeight: 14,
+                        ),
+                        child: Text(
+                          '$cartItemCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 8,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              onPressed: () => _navigateTo(context, const BuyerCartScreen()),
+            );
+          },
+        ),
+        PopupMenuButton<String>(
+          icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
+          onSelected: (value) {
+            if (value == 'logout') _showLogoutDialog(context);
+          },
+          itemBuilder: (BuildContext context) => [
+            const PopupMenuItem<String>(
+              value: 'logout',
+              child: Row(
+                children: [
+                  Icon(Icons.logout, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Logout'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildHomeContent() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(
+        top: kToolbarHeight + 40,
+      ), // Offset for transparent AppBar
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 10),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16),
+            child: ImageSlider(
+              imageUrls: [
+                'https://images.unsplash.com/photo-1560806887-1e4cd0b6bcd6?auto=format&fit=crop&q=80&w=800', // Fresh Red Apples
+                'https://images.unsplash.com/photo-1547514701-42782101795e?auto=format&fit=crop&q=80&w=800', // Juicy Oranges
+                'https://images.unsplash.com/photo-1464965911861-746a04b4bca6?auto=format&fit=crop&q=80&w=800', // Ripe Strawberries
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Healthy Choice ✨',
+                  style: GoogleFonts.outfit(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                Text(
+                  'Farm-fresh produce delivered to you.',
+                  style: GoogleFonts.inter(fontSize: 14, color: Colors.white70),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildQuickActions(context),
+          ),
+          const SizedBox(height: 32),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              'Featured Categories',
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          _buildFeaturedProducts(context),
+          const SizedBox(height: 100), // Bottom padding for nav bar
+        ],
+      ),
+    );
+  }
+
   Widget _buildGlassBottomNav(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.all(20),
+      margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
       child: GlassContainer(
         borderRadius: 30,
         child: BottomNavigationBar(
@@ -183,7 +216,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           elevation: 0,
           selectedItemColor: Colors.white,
           unselectedItemColor: Colors.white54,
-          currentIndex: 0,
+          currentIndex: _selectedIndex,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.home_rounded),
@@ -199,10 +232,9 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
             ),
           ],
           onTap: (index) {
-            if (index == 1)
-              _navigateTo(context, const ProductBrowseScreen());
-            else if (index == 2)
-              _navigateTo(context, const BuyerOrdersScreen());
+            setState(() {
+              _selectedIndex = index;
+            });
           },
         ),
       ),
@@ -223,7 +255,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           'Explore Shop',
           Icons.shopping_basket_rounded,
           AppConstants.primaryGradient,
-          () => _navigateTo(context, const ProductBrowseScreen()),
+          () => setState(() => _selectedIndex = 1), // Switch to Shop Tab
         ),
         _buildActionGlassCard(
           context,
@@ -237,14 +269,14 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           'Order History',
           Icons.history_rounded,
           AppConstants.sunsetGradient,
-          () => _navigateTo(context, const BuyerOrdersScreen()),
+          () => setState(() => _selectedIndex = 2), // Switch to Orders Tab
         ),
         _buildActionGlassCard(
           context,
           'Track Delivery',
           Icons.local_shipping_rounded,
           AppConstants.purpleGradient,
-          () => _navigateTo(context, const BuyerOrdersScreen()),
+          () => setState(() => _selectedIndex = 2), // Switch to Orders Tab
         ),
       ],
     );
@@ -320,8 +352,7 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
             ),
             const SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () =>
-                  _navigateTo(context, const ProductBrowseScreen()),
+              onPressed: () => setState(() => _selectedIndex = 1),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white24,
                 foregroundColor: Colors.white,

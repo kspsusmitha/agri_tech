@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/medicine_model.dart';
 import '../../services/medicine_service.dart';
 import '../../services/session_service.dart';
-import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
 
@@ -48,16 +47,34 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   }
 
   Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 50,
-    );
-    if (pickedFile != null) {
-      final bytes = await File(pickedFile.path).readAsBytes();
-      setState(() {
-        _imageBase64 = base64Encode(bytes);
-      });
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 50,
+      );
+
+      if (pickedFile != null) {
+        debugPrint('🔵 [Add Medicine] Image picked: ${pickedFile.path}');
+        // Read bytes directly from XFile (cross-platform safe)
+        final bytes = await pickedFile.readAsBytes();
+
+        setState(() {
+          _imageBase64 = base64Encode(bytes);
+        });
+        debugPrint(
+          '✅ [Add Medicine] Image encoded to base64 (length: ${_imageBase64?.length})',
+        );
+      } else {
+        debugPrint('⚠️ [Add Medicine] No image picked');
+      }
+    } catch (e) {
+      debugPrint('❌ [Add Medicine] Error picking image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error picking image: $e')));
+      }
     }
   }
 

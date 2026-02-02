@@ -32,6 +32,25 @@ class OrderService {
         });
   }
 
+  // Stream orders for a specific farmer (Sales)
+  Stream<List<OrderModel>> streamFarmerSales(String farmerId) {
+    return _database
+        .child('orders')
+        .orderByChild('farmerId')
+        .equalTo(farmerId)
+        .onValue
+        .map((event) {
+          final data = event.snapshot.value as Map<dynamic, dynamic>?;
+          if (data == null) return [];
+
+          return data.entries.map((e) {
+            return OrderModel.fromJson(
+              Map<String, dynamic>.from(e.value as Map),
+            );
+          }).toList()..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        });
+  }
+
   // Update order status (used by Farmer/Admin)
   Future<void> updateOrderStatus(String orderId, String status) async {
     await _database.child('orders').child(orderId).update({

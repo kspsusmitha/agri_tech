@@ -209,21 +209,107 @@ class _ContentManagementScreenState extends State<ContentManagementScreen>
   }
 
   void _showAddDialog() {
+    final isFertilizer = _tabController.index == 0;
+    final nameController = TextEditingController(); // Name or Crop Name
+    final descController = TextEditingController(); // Description or Stage
+    final durationController =
+        TextEditingController(); // Duration (Lifecycle only)
+    final formKey = GlobalKey<FormState>();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xff1a0b2e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
-          'Add Resource',
+          isFertilizer ? 'Add Fertilizer' : 'Add Lifecycle',
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: Text(
-          'Detailed form for adding knowledge resources will be implemented here.',
-          style: GoogleFonts.inter(color: Colors.white70),
+        content: Form(
+          key: formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: nameController,
+                style: const TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  labelText: isFertilizer ? 'Fertilizer Name' : 'Crop Name',
+                  labelStyle: const TextStyle(color: Colors.white70),
+                  enabledBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.white24),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: const BorderSide(color: Colors.purpleAccent),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (v) => v!.isEmpty ? 'Required' : null,
+              ),
+              const SizedBox(height: 16),
+              if (isFertilizer)
+                TextFormField(
+                  controller: descController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Description',
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.purpleAccent),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  maxLines: 3,
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                )
+              else ...[
+                TextFormField(
+                  controller: descController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Stage (e.g. Seedling)',
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.purpleAccent),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: durationController,
+                  style: const TextStyle(color: Colors.white),
+                  decoration: InputDecoration(
+                    labelText: 'Duration (Days)',
+                    labelStyle: const TextStyle(color: Colors.white70),
+                    enabledBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.white24),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderSide: const BorderSide(color: Colors.purpleAccent),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (v) => v!.isEmpty ? 'Required' : null,
+                ),
+              ],
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -234,7 +320,23 @@ class _ContentManagementScreenState extends State<ContentManagementScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () async {
+              if (formKey.currentState!.validate()) {
+                if (isFertilizer) {
+                  await _contentService.saveFertilizer({
+                    'name': nameController.text,
+                    'description': descController.text,
+                  });
+                } else {
+                  await _contentService.saveCropLifecycle({
+                    'cropName': nameController.text,
+                    'stage': descController.text,
+                    'duration': int.parse(durationController.text),
+                  });
+                }
+                if (context.mounted) Navigator.pop(context);
+              }
+            },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.purpleAccent,
               foregroundColor: Colors.white,
@@ -242,7 +344,7 @@ class _ContentManagementScreenState extends State<ContentManagementScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
-            child: const Text('PROCEED'),
+            child: const Text('SAVE'),
           ),
         ],
       ),

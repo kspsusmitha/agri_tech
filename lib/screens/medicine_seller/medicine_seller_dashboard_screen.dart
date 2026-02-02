@@ -5,6 +5,8 @@ import '../../models/medicine_model.dart';
 import '../role_selection_screen.dart';
 import 'add_medicine_screen.dart';
 import 'medicine_inventory_screen.dart';
+import 'medicine_orders_screen.dart';
+import 'business_reports_screen.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../utils/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -249,14 +251,14 @@ class _MedicineSellerDashboardScreenState
           'Sales History',
           Icons.receipt_long_rounded,
           AppConstants.purpleGradient,
-          () => {},
+          () => _navigateTo(context, const MedicineOrdersScreen()),
         ),
         _buildActionGlassCard(
           context,
           'Business Reports',
           Icons.analytics_rounded,
           AppConstants.primaryGradient,
-          () => {},
+          () => _navigateTo(context, const BusinessReportsScreen()),
         ),
       ],
     );

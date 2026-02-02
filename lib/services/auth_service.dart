@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 
@@ -35,6 +36,8 @@ class AuthService {
     String? address,
   }) async {
     try {
+      debugPrint('🔵 [Auth Service] registerUser called for: $email');
+
       // Validate role
       if (![
         'farmer',
@@ -49,7 +52,10 @@ class AuthService {
       }
 
       // Check if email already exists
+      debugPrint('🔵 [Auth Service] Checking if email exists...');
       final emailExists = await _checkEmailExists(email, role);
+      debugPrint('🔵 [Auth Service] Email exists check result: $emailExists');
+
       if (emailExists) {
         return {
           'success': false,
@@ -82,9 +88,27 @@ class AuthService {
           .child('users')
           .child(role.toLowerCase())
           .child(userId)
-          .set(user.toJson());
+          .set(user.toJson())
+          .timeout(const Duration(seconds: 15));
 
-      debugPrint('✅ [Auth Service] User registered: $email as $role');
+      debugPrint(
+        '✅ [Auth Service] User registered in Realtime DB: $email as $role',
+      );
+
+      // Save to Firestore (Dual write for redundancy)
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .set(user.toJson())
+            .timeout(const Duration(seconds: 15));
+        debugPrint('✅ [Auth Service] User registered in Firestore: $email');
+      } catch (e) {
+        debugPrint(
+          '⚠️ [Auth Service] Firestore registration failed (non-critical): $e',
+        );
+        // We continue since RDB succeeded
+      }
 
       return {
         'success': true,
@@ -175,10 +199,15 @@ class AuthService {
   /// Check if email exists
   Future<bool> _checkEmailExists(String email, String role) async {
     try {
+      debugPrint('🔵 [Auth Service] Querying database for email check...');
       final usersSnapshot = await _database
           .child('users')
           .child(role.toLowerCase())
-          .get();
+          .get()
+          .timeout(const Duration(seconds: 10));
+      debugPrint(
+        '🔵 [Auth Service] Database query complete. Snapshot exists: ${usersSnapshot.exists}',
+      );
 
       if (usersSnapshot.exists) {
         final usersData = usersSnapshot.value as Map<dynamic, dynamic>;

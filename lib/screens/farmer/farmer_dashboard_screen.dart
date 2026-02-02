@@ -10,11 +10,31 @@ import 'weather_alert_screen.dart';
 import 'inventory_screen.dart';
 import '../community/community_home_screen.dart';
 import 'farmer_medicine_orders_screen.dart';
+import '../../services/crop_service.dart';
+import '../../services/order_service.dart';
+import '../../services/medicine_order_service.dart';
+import '../../services/notification_service.dart';
+import '../../models/crop_model.dart';
+import '../../models/order_model.dart';
+import '../../models/medicine_order_model.dart';
 import '../../widgets/glass_widgets.dart';
+import 'farmer_notifications_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class FarmerDashboardScreen extends StatelessWidget {
+class FarmerDashboardScreen extends StatefulWidget {
   const FarmerDashboardScreen({super.key});
+
+  @override
+  State<FarmerDashboardScreen> createState() => _FarmerDashboardScreenState();
+}
+
+class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
+  final CropService _cropService = CropService();
+  final OrderService _orderService = OrderService();
+  final MedicineOrderService _medOrderService = MedicineOrderService();
+  final NotificationService _notificationService = NotificationService();
+  final String _userId = SessionService().user?.id ?? 'guest';
+  final String _farmerId = SessionService().user?.id ?? 'guest';
 
   @override
   Widget build(BuildContext context) {
@@ -31,12 +51,48 @@ class FarmerDashboardScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.notifications_none_rounded,
-              color: Colors.white,
-            ),
-            onPressed: () {},
+          StreamBuilder<int>(
+            stream: _notificationService.streamUnreadCount(_userId),
+            builder: (context, snapshot) {
+              final unreadCount = snapshot.data ?? 0;
+              return Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(
+                      Icons.notifications_none_rounded,
+                      color: Colors.white,
+                    ),
+                    onPressed: () =>
+                        _navigateTo(context, const FarmerNotificationsScreen()),
+                  ),
+                  if (unreadCount > 0)
+                    Positioned(
+                      right: 8,
+                      top: 8,
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.redAccent,
+                          shape: BoxShape.circle,
+                        ),
+                        constraints: const BoxConstraints(
+                          minWidth: 16,
+                          minHeight: 16,
+                        ),
+                        child: Text(
+                          '$unreadCount',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert_rounded, color: Colors.white),
@@ -153,29 +209,47 @@ class FarmerDashboardScreen extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: _buildGlassStatCard(
-            'Crops',
-            '12',
-            Icons.agriculture_rounded,
-            AppConstants.primaryGradient,
+          child: StreamBuilder<List<CropModel>>(
+            stream: _cropService.streamFarmerCrops(_farmerId),
+            builder: (context, snapshot) {
+              final count = snapshot.data?.length ?? 0;
+              return _buildGlassStatCard(
+                'Crops',
+                count.toString(),
+                Icons.agriculture_rounded,
+                AppConstants.primaryGradient,
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildGlassStatCard(
-            'Sales',
-            '8',
-            Icons.inventory_2_rounded,
-            AppConstants.oceanGradient,
+          child: StreamBuilder<List<OrderModel>>(
+            stream: _orderService.streamFarmerSales(_farmerId),
+            builder: (context, snapshot) {
+              final count = snapshot.data?.length ?? 0;
+              return _buildGlassStatCard(
+                'Sales',
+                count.toString(),
+                Icons.inventory_2_rounded,
+                AppConstants.oceanGradient,
+              );
+            },
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
-          child: _buildGlassStatCard(
-            'Orders',
-            '15',
-            Icons.shopping_bag_rounded,
-            AppConstants.sunsetGradient,
+          child: StreamBuilder<List<MedicineOrderModel>>(
+            stream: _medOrderService.streamFarmerOrders(_farmerId),
+            builder: (context, snapshot) {
+              final count = snapshot.data?.length ?? 0;
+              return _buildGlassStatCard(
+                'Orders',
+                count.toString(),
+                Icons.shopping_bag_rounded,
+                AppConstants.sunsetGradient,
+              );
+            },
           ),
         ),
       ],
@@ -333,59 +407,84 @@ class FarmerDashboardScreen extends StatelessWidget {
   }
 
   Widget _buildRecentCropsGlass(BuildContext context) {
-    return GlassContainer(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<List<CropModel>>(
+      stream: _cropService.streamFarmerCrops(_farmerId),
+      builder: (context, snapshot) {
+        final crops = snapshot.data ?? [];
+        return GlassContainer(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Recent Crops',
-                style: GoogleFonts.outfit(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Recent Crops',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () =>
+                        _navigateTo(context, const CropManagementScreen()),
+                    child: Text(
+                      'View Details',
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              TextButton(
-                onPressed: () =>
-                    _navigateTo(context, const CropManagementScreen()),
-                child: Text(
-                  'View Details',
-                  style: GoogleFonts.inter(color: Colors.white70, fontSize: 13),
-                ),
-              ),
+              const SizedBox(height: 12),
+              if (crops.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      'No crops found.',
+                      style: GoogleFonts.inter(color: Colors.white38),
+                    ),
+                  ),
+                )
+              else
+                ...crops.take(3).map((crop) {
+                  return Column(
+                    children: [
+                      _buildCropItemGlass(
+                        crop.cropType,
+                        crop.phase,
+                        '${DateTime.now().difference(crop.plantingDate).inDays} Days',
+                        Icons.eco_rounded,
+                        _getCropColor(crop.phase),
+                      ),
+                      if (crop != crops.take(3).last)
+                        const Divider(color: Colors.white12),
+                    ],
+                  );
+                }),
             ],
           ),
-          const SizedBox(height: 12),
-          _buildCropItemGlass(
-            'Tomato Hybrid',
-            'Vegetative Phase',
-            '45 Days',
-            Icons.eco_rounded,
-            Colors.redAccent,
-          ),
-          const Divider(color: Colors.white12),
-          _buildCropItemGlass(
-            'Sonora Wheat',
-            'Flowering Phase',
-            '62 Days',
-            Icons.grass_rounded,
-            Colors.amber,
-          ),
-          const Divider(color: Colors.white12),
-          _buildCropItemGlass(
-            'Sweet Corn',
-            'Fruiting Phase',
-            '78 Days',
-            Icons.agriculture_rounded,
-            Colors.greenAccent,
-          ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Color _getCropColor(String phase) {
+    switch (phase) {
+      case 'Harvesting':
+        return Colors.greenAccent;
+      case 'Fruiting':
+        return Colors.orangeAccent;
+      case 'Flowering':
+        return Colors.amber;
+      default:
+        return Colors.green;
+    }
   }
 
   Widget _buildCropItemGlass(

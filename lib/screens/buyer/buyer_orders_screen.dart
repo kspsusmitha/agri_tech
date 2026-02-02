@@ -4,6 +4,7 @@ import '../../utils/constants.dart';
 import '../../services/order_service.dart';
 import '../../services/session_service.dart';
 import '../../models/order_model.dart';
+import 'track_order_screen.dart';
 
 class BuyerOrdersScreen extends StatefulWidget {
   const BuyerOrdersScreen({super.key});
@@ -114,6 +115,26 @@ class _BuyerOrdersScreenState extends State<BuyerOrdersScreen> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TrackOrderScreen(order: order),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.local_shipping_rounded, size: 18),
+                    label: const Text('Track Order'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.purpleAccent,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 if (order.status == 'delivered' && order.rating == null)

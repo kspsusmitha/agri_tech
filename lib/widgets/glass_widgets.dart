@@ -139,11 +139,35 @@ class _ImageSliderState extends State<ImageSlider> {
             itemBuilder: (context, index) {
               return Container(
                 margin: const EdgeInsets.symmetric(horizontal: 8),
-                decoration: BoxDecoration(
+                child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  image: DecorationImage(
-                    image: NetworkImage(widget.imageUrls[index]),
+                  child: Image.network(
+                    widget.imageUrls[index],
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: Colors.white24,
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image_rounded,
+                            color: Colors.white54,
+                            size: 40,
+                          ),
+                        ),
+                      );
+                    },
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return Container(
+                        color: Colors.white12,
+                        child: const Center(
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               );

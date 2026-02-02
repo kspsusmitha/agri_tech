@@ -4,7 +4,7 @@ import '../../services/cart_service.dart';
 import '../../services/session_service.dart';
 import '../../services/order_service.dart';
 import '../../models/order_model.dart';
-import 'buyer_orders_screen.dart';
+import '../../services/payment_service.dart';
 import 'dart:convert';
 
 class BuyerCartScreen extends StatefulWidget {
@@ -17,6 +17,7 @@ class BuyerCartScreen extends StatefulWidget {
 class _BuyerCartScreenState extends State<BuyerCartScreen> {
   final CartService _cartService = CartService();
   final OrderService _orderService = OrderService();
+  final PaymentService _paymentService = PaymentService();
   final String _buyerId = SessionService().user?.id ?? 'guest';
 
   double _calculateTotal(List<Map<String, dynamic>> items) {
@@ -241,116 +242,154 @@ class _BuyerCartScreenState extends State<BuyerCartScreen> {
   void _showCheckoutDialog(List<Map<String, dynamic>> items, double total) {
     final addressController = TextEditingController();
     final phoneController = TextEditingController();
+    ValueNotifier<bool> isProcessing = ValueNotifier(false);
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Checkout'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Delivery Address',
-                  border: OutlineInputBorder(),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total:'),
-                    Text(
-                      '₹${total.toStringAsFixed(2)}',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18,
+      barrierDismissible: false,
+      builder: (context) => ValueListenableBuilder<bool>(
+        valueListenable: isProcessing,
+        builder: (context, processing, child) {
+          return AlertDialog(
+            title: const Text('Checkout'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (processing) ...[
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const Text('Processing Payment...'),
+                  ] else ...[
+                    TextField(
+                      controller: addressController,
+                      decoration: const InputDecoration(
+                        labelText: 'Delivery Address',
+                        border: OutlineInputBorder(),
+                      ),
+                      maxLines: 3,
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: phoneController,
+                      decoration: const InputDecoration(
+                        labelText: 'Phone Number',
+                        border: OutlineInputBorder(),
+                      ),
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[100],
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Total:'),
+                          Text(
+                            '₹${total.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
-                ),
+                ],
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (addressController.text.isNotEmpty &&
-                  phoneController.text.isNotEmpty) {
-                // In a real app, we'd group items by farmer and create multiple orders
-                // or handle it in the backend. Here we'll create a single order for simplicity
-                // but use the first farmerId as primary.
-
-                final orderId = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
-                final order = OrderModel(
-                  id: orderId,
-                  buyerId: _buyerId,
-                  farmerId: items.first['farmerId'],
-                  items: items
-                      .map(
-                        (i) => OrderItem(
-                          productId: i['id'],
-                          productName: i['name'],
-                          quantity: i['quantity'],
-                          price: i['price'].toDouble(),
-                        ),
-                      )
-                      .toList(),
-                  totalAmount: total,
-                  shippingAddress: addressController.text,
-                  createdAt: DateTime.now(),
-                );
-
-                await _orderService.placeOrder(order);
-                await _cartService.clearCart(_buyerId);
-
-                if (mounted) {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Order placed successfully!'),
-                      backgroundColor: Colors.green,
+            ),
+            actions: processing
+                ? []
+                : [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
                     ),
-                  );
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const BuyerOrdersScreen(),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (addressController.text.isNotEmpty &&
+                            phoneController.text.isNotEmpty) {
+                          isProcessing.value = true;
+
+                          // 1. Process Payment
+                          final paymentResult = await _paymentService
+                              .processPayment(
+                                amount: total,
+                                method: 'Demo Card',
+                                details: {},
+                              );
+
+                          if (paymentResult['success'] == true) {
+                            // 2. Place Order
+                            final orderId =
+                                'ORD-${DateTime.now().millisecondsSinceEpoch}';
+                            final order = OrderModel(
+                              id: orderId,
+                              buyerId: _buyerId,
+                              farmerId: items.first['farmerId'],
+                              items: items
+                                  .map(
+                                    (i) => OrderItem(
+                                      productId: i['id'],
+                                      productName: i['name'],
+                                      quantity: i['quantity'],
+                                      price: i['price'].toDouble(),
+                                    ),
+                                  )
+                                  .toList(),
+                              totalAmount: total,
+                              shippingAddress: addressController.text,
+                              createdAt: DateTime.now(),
+                            );
+
+                            await _orderService.placeOrder(order);
+                            await _cartService.clearCart(_buyerId);
+
+                            if (mounted) {
+                              Navigator.pop(context); // Close dialog
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Payment Successful! Order placed.',
+                                  ),
+                                  backgroundColor: Colors.green,
+                                ),
+                              );
+                              // Switch to Orders tab (requires context, but we might just go back or rely on user navigation)
+                              // Since we are in Cart Screen (pushed), popping is fine, or replacing.
+                              // Let's pop to dashboard.
+                              Navigator.pop(context);
+                            }
+                          } else {
+                            isProcessing.value = false;
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    'Payment Failed: ${paymentResult['message']}',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill all details'),
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Pay & Place Order'),
                     ),
-                  );
-                }
-              } else {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please fill all details')),
-                );
-              }
-            },
-            child: const Text('Place Order'),
-          ),
-        ],
+                  ],
+          );
+        },
       ),
     );
   }

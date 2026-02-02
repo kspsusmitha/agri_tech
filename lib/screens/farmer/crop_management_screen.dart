@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import '../../utils/constants.dart';
+import '../../services/crop_service.dart';
+import '../../services/session_service.dart';
 import '../../services/ai_service.dart';
+import '../../services/notification_helper.dart';
+import '../../models/crop_model.dart';
+import '../../utils/constants.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class CropManagementScreen extends StatefulWidget {
   const CropManagementScreen({super.key});
@@ -13,36 +17,9 @@ class CropManagementScreen extends StatefulWidget {
 }
 
 class _CropManagementScreenState extends State<CropManagementScreen> {
+  final CropService _cropService = CropService();
   final AIService _aiService = AIService();
-  final List<Map<String, dynamic>> _crops = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _crops.addAll([
-      {
-        'id': '1',
-        'cropType': 'Tomato',
-        'plantingDate': DateTime.now().subtract(const Duration(days: 45)),
-        'phase': 'Vegetative',
-        'description': 'Tomato crop in vegetative stage',
-      },
-      {
-        'id': '2',
-        'cropType': 'Wheat',
-        'plantingDate': DateTime.now().subtract(const Duration(days: 60)),
-        'phase': 'Flowering',
-        'description': 'Wheat crop flowering',
-      },
-      {
-        'id': '3',
-        'cropType': 'Corn',
-        'plantingDate': DateTime.now().subtract(const Duration(days: 75)),
-        'phase': 'Fruiting',
-        'description': 'Corn crop fruiting',
-      },
-    ]);
-  }
+  final String _farmerId = SessionService().user?.id ?? 'guest';
 
   @override
   Widget build(BuildContext context) {
@@ -65,14 +42,25 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
       body: GradientBackground(
         colors: AppConstants.primaryGradient,
         child: SafeArea(
-          child: _crops.isEmpty
-              ? Center(
+          child: StreamBuilder<List<CropModel>>(
+            stream: _cropService.streamFarmerCrops(_farmerId),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Colors.white),
+                );
+              }
+
+              final crops = snapshot.data ?? [];
+
+              if (crops.isEmpty) {
+                return Center(
                   child: GlassContainer(
                     padding: const EdgeInsets.all(40),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.agriculture_rounded,
                           size: 80,
                           color: Colors.white30,
@@ -103,22 +91,25 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
                       ],
                     ),
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: _crops.length,
-                  itemBuilder: (context, index) {
-                    final crop = _crops[index];
-                    return _buildCropCard(crop);
-                  },
-                ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: crops.length,
+                itemBuilder: (context, index) {
+                  return _buildCropCard(crops[index]);
+                },
+              );
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildCropCard(Map<String, dynamic> crop) {
-    final plantingDate = crop['plantingDate'] as DateTime;
+  Widget _buildCropCard(CropModel crop) {
+    final plantingDate = crop.plantingDate;
     final daysSincePlanting = DateTime.now().difference(plantingDate).inDays;
 
     return Container(
@@ -142,7 +133,7 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
               child: const Icon(Icons.eco_rounded, color: Colors.white),
             ),
             title: Text(
-              crop['cropType'],
+              crop.cropType,
               style: GoogleFonts.outfit(
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
@@ -150,7 +141,7 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
               ),
             ),
             subtitle: Text(
-              '${crop['phase']} • $daysSincePlanting days old',
+              '${crop.phase} • $daysSincePlanting days old',
               style: GoogleFonts.inter(
                 color: Colors.white.withOpacity(0.7),
                 fontSize: 13,
@@ -170,7 +161,7 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
                       'Planting Date',
                       DateFormat('MMM d, y').format(plantingDate),
                     ),
-                    _buildInfoRow('Current Phase', crop['phase']),
+                    _buildInfoRow('Current Phase', crop.phase),
                     _buildInfoRow(
                       'Harvest Progress',
                       '${(daysSincePlanting / 90 * 100).clamp(0, 100).toInt()}%',
@@ -257,12 +248,55 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
                         ),
                       ],
                     ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: TextButton.icon(
+                        onPressed: () => _deleteCrop(crop.id),
+                        icon: const Icon(
+                          Icons.delete_outline_rounded,
+                          size: 18,
+                        ),
+                        label: const Text('REMOVE RECORD'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: Colors.redAccent,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _deleteCrop(String id) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xff1a3a2a),
+        title: const Text('Delete Crop', style: TextStyle(color: Colors.white)),
+        content: const Text(
+          'Are you sure you want to delete this record?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _cropService.deleteCrop(id);
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+            child: const Text('DELETE'),
+          ),
+        ],
       ),
     );
   }
@@ -350,7 +384,7 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
+        builder: (context, setDialogState) => AlertDialog(
           backgroundColor: const Color(0xff1a3a2a), // Dark green theme
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(24),
@@ -373,11 +407,11 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
                 ),
                 const SizedBox(height: 16),
                 _buildDialogDatePicker(context, selectedDate, (date) {
-                  setState(() => selectedDate = date);
+                  setDialogState(() => selectedDate = date);
                 }),
                 const SizedBox(height: 16),
                 _buildDialogDropdown(selectedPhase, (val) {
-                  setState(() => selectedPhase = val!);
+                  setDialogState(() => selectedPhase = val!);
                 }),
                 const SizedBox(height: 16),
                 _buildDialogField(
@@ -392,20 +426,24 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('CANCEL', style: TextStyle(color: Colors.white70)),
+              child: const Text(
+                'CANCEL',
+                style: TextStyle(color: Colors.white70),
+              ),
             ),
             ElevatedButton(
               onPressed: () {
                 if (cropTypeController.text.isNotEmpty) {
-                  this.setState(() {
-                    _crops.add({
-                      'id': DateTime.now().millisecondsSinceEpoch.toString(),
-                      'cropType': cropTypeController.text,
-                      'plantingDate': selectedDate,
-                      'phase': selectedPhase,
-                      'description': descriptionController.text,
-                    });
-                  });
+                  final newCrop = CropModel(
+                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                    farmerId: _farmerId,
+                    cropType: cropTypeController.text,
+                    plantingDate: selectedDate,
+                    phase: selectedPhase,
+                    description: descriptionController.text,
+                    createdAt: DateTime.now(),
+                  );
+                  _cropService.addCrop(newCrop);
                   Navigator.pop(context);
                 }
               },
@@ -519,7 +557,7 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
     );
   }
 
-  void _getAIAdvice(Map<String, dynamic> crop) async {
+  void _getAIAdvice(CropModel crop) async {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -528,12 +566,12 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
     );
 
     try {
-      final plantingDate = crop['plantingDate'] as DateTime;
+      final plantingDate = crop.plantingDate;
       final daysSincePlanting = DateTime.now().difference(plantingDate).inDays;
 
       final advice = await _aiService.getCropManagementAdvice(
-        cropType: crop['cropType'],
-        phase: crop['phase'],
+        cropType: crop.cropType,
+        phase: crop.phase,
         daysSincePlanting: daysSincePlanting,
       );
 
@@ -586,11 +624,19 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
     );
   }
 
-  void _updatePhase(Map<String, dynamic> crop) {
-    final currentIndex = AppConstants.cropPhases.indexOf(crop['phase']);
+  void _updatePhase(CropModel crop) {
+    final currentIndex = AppConstants.cropPhases.indexOf(crop.phase);
     if (currentIndex < AppConstants.cropPhases.length - 1) {
-      setState(() {
-        crop['phase'] = AppConstants.cropPhases[currentIndex + 1];
+      final newPhase = AppConstants.cropPhases[currentIndex + 1];
+      _cropService.updateCropPhase(crop.id, newPhase).then((_) {
+        if (mounted) {
+          NotificationHelper().triggerCropUpdate(
+            context,
+            crop.cropType,
+            newPhase,
+            cropId: crop.id,
+          );
+        }
       });
     }
   }
