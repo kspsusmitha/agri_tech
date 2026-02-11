@@ -9,7 +9,6 @@ import 'farmer_orders_screen.dart';
 import 'weather_alert_screen.dart';
 import 'inventory_screen.dart';
 import '../community/community_home_screen.dart';
-import 'farmer_medicine_orders_screen.dart';
 import '../../services/crop_service.dart';
 import '../../services/order_service.dart';
 import '../../services/medicine_order_service.dart';
@@ -19,6 +18,7 @@ import '../../models/order_model.dart';
 import '../../models/medicine_order_model.dart';
 import '../../widgets/glass_widgets.dart';
 import 'farmer_notifications_screen.dart';
+import 'medicine_seller_search_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class FarmerDashboardScreen extends StatefulWidget {
@@ -114,93 +114,91 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          const GradientBackground(colors: AppConstants.primaryGradient),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  // Image Slider at Top
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: ImageSlider(
-                      imageUrls: [
-                        'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
-                        'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800',
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1932&q=80',
+        gradient: AppConstants.primaryGradient,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              // Image Slider at Top
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: ImageSlider(
+                  imageUrls: [
+                    'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=800',
+                    'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
+                    'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=800',
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
 
-                  // Welcome Message
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Welcome back, Farmer 👋',
-                          style: GoogleFonts.outfit(
-                            fontSize: 26,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Everything you need is at your fingertips.',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white70,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Stats Section
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildGlassStatsRow(context),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Quick Actions Grid
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Text(
-                      'Tools & Services',
+              // Welcome Message
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back, Farmer 👋',
                       style: GoogleFonts.outfit(
-                        fontSize: 20,
+                        fontSize: 26,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildQuickActionsGrid(context),
-                  ),
-                  const SizedBox(height: 32),
-
-                  // Recent Crops with Glassmorphism
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildRecentCropsGlass(context),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Everything you need is at your fingertips.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+
+              // Stats Section
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildGlassStatsRow(context),
+              ),
+              const SizedBox(height: 32),
+
+              // Quick Actions Grid
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'Tools & Services',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildQuickActionsGrid(context),
+              ),
+              const SizedBox(height: 32),
+
+              // Recent Crops with Glassmorphism
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildRecentCropsGlass(context),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -334,7 +332,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
           'Med & Fert',
           Icons.medication_rounded,
           AppConstants.purpleGradient,
-          () => _navigateTo(context, const FarmerMedicineOrdersScreen()),
+          () => _navigateTo(context, const MedicineSellerSearchScreen()),
         ),
         _buildActionGlassCard(
           context,

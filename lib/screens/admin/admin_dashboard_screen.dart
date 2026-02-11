@@ -81,92 +81,90 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          const GradientBackground(colors: AppConstants.purpleGradient),
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 10),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: GlassContainer(
-                      padding: EdgeInsets.zero,
-                      borderRadius: 24,
-                      child: const ImageSlider(
-                        imageUrls: [
-                          'https://images.unsplash.com/photo-1596253410522-a7e8ea6075bc?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
-                        ],
-                      ),
-                    ),
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1920', // Abstract data/network
+        gradient: AppConstants.purpleGradient,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.zero,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: GlassContainer(
+                  padding: EdgeInsets.zero,
+                  borderRadius: 24,
+                  child: const ImageSlider(
+                    imageUrls: [
+                      'https://images.unsplash.com/photo-1596253410522-a7e8ea6075bc?auto=format&fit=crop&q=80&w=800',
+                      'https://images.unsplash.com/photo-1589923188900-85dae523342b?auto=format&fit=crop&q=80&w=800',
+                    ],
                   ),
-                  const SizedBox(height: 32),
+                ),
+              ),
+              const SizedBox(height: 32),
 
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'System Intelligence',
-                          style: GoogleFonts.outfit(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                            letterSpacing: -0.5,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Real-time network oversight & metrics.',
-                          style: GoogleFonts.inter(
-                            fontSize: 14,
-                            color: Colors.white60,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildStatsStream(),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: Text(
-                      'Management Console',
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'System Intelligence',
                       style: GoogleFonts.outfit(
-                        fontSize: 20,
+                        fontSize: 28,
                         fontWeight: FontWeight.bold,
                         color: Colors.white,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildQuickActionsGrid(context),
-                  ),
-                  const SizedBox(height: 32),
-
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: _buildRecentActivityStream(),
-                  ),
-                  const SizedBox(height: 40),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      'Real-time network oversight & metrics.',
+                      style: GoogleFonts.inter(
+                        fontSize: 14,
+                        color: Colors.white60,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
+              const SizedBox(height: 24),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildStatsStream(),
+              ),
+              const SizedBox(height: 32),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Text(
+                  'Management Console',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildQuickActionsGrid(context),
+              ),
+              const SizedBox(height: 32),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: _buildRecentActivityStream(),
+              ),
+              const SizedBox(height: 40),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

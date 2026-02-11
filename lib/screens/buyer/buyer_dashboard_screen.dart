@@ -37,6 +37,17 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
     }
   }
 
+  String get _currentImage {
+    switch (_selectedIndex) {
+      case 1:
+        return 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=1920';
+      case 2:
+        return 'https://images.unsplash.com/photo-1549419134-2e259e218228?auto=format&fit=crop&q=80&w=1920';
+      default:
+        return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1920';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -44,23 +55,17 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
       extendBody: true,
       // Only show Main AppBar on Home tab (Index 0) to avoid double AppBars
       appBar: _selectedIndex == 0 ? _buildHomeAppBar() : null,
-      body: Stack(
-        children: [
-          GradientBackground(colors: _currentGradient),
-          SafeArea(
-            // If index != 0, we might strictly not need SafeArea if the child screens have their own AppBars/Scaffolds.
-            // However, wrapping in SafeArea is generally safe.
-            top: false,
-            child: IndexedStack(
-              index: _selectedIndex,
-              children: [
-                _buildHomeContent(),
-                const ProductBrowseScreen(), // Ensure this screen handles its own safe area/appbar if needed
-                const BuyerOrdersScreen(),
-              ],
-            ),
-          ),
-        ],
+      body: ScreenBackground(
+        imagePath: _currentImage,
+        gradient: _currentGradient,
+        child: IndexedStack(
+          index: _selectedIndex,
+          children: [
+            _buildHomeContent(),
+            const ProductBrowseScreen(), // Ensure this screen handles its own safe area/appbar if needed
+            const BuyerOrdersScreen(),
+          ],
+        ),
       ),
       bottomNavigationBar: _buildGlassBottomNav(context),
     );

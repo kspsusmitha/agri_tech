@@ -29,82 +29,80 @@ class TransactionsScreen extends StatelessWidget {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: Stack(
-        children: [
-          const GradientBackground(colors: AppConstants.purpleGradient),
-          SafeArea(
-            child: StreamBuilder<List<dynamic>>(
-              stream: billingService.streamAllTransactions().map(
-                (list) => list as List<dynamic>,
-              ),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&q=80&w=1920', // Finance/Money
+        gradient: AppConstants.purpleGradient,
+        child: StreamBuilder<List<dynamic>>(
+          stream: billingService.streamAllTransactions().map(
+            (list) => list as List<dynamic>,
+          ),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
+            }
+
+            return StreamBuilder<List<MedicineOrderModel>>(
+              stream: medOrderService.streamAllOrders(),
+              builder: (context, medSnapshot) {
+                final transactions = snapshot.data ?? [];
+                final medOrders = medSnapshot.data ?? [];
+
+                final combined = [...transactions, ...medOrders];
+                combined.sort((a, b) {
+                  final dateA = a is TransactionModel
+                      ? a.timestamp
+                      : (a as MedicineOrderModel).createdAt;
+                  final dateB = b is TransactionModel
+                      ? b.timestamp
+                      : (b as MedicineOrderModel).createdAt;
+                  return dateB.compareTo(dateA);
+                });
+
+                if (combined.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No transactions found.',
+                      style: GoogleFonts.inter(color: Colors.white70),
+                    ),
                   );
                 }
 
-                return StreamBuilder<List<MedicineOrderModel>>(
-                  stream: medOrderService.streamAllOrders(),
-                  builder: (context, medSnapshot) {
-                    final transactions = snapshot.data ?? [];
-                    final medOrders = medSnapshot.data ?? [];
-
-                    final combined = [...transactions, ...medOrders];
-                    combined.sort((a, b) {
-                      final dateA = a is TransactionModel
-                          ? a.timestamp
-                          : (a as MedicineOrderModel).createdAt;
-                      final dateB = b is TransactionModel
-                          ? b.timestamp
-                          : (b as MedicineOrderModel).createdAt;
-                      return dateB.compareTo(dateA);
-                    });
-
-                    if (combined.isEmpty) {
-                      return Center(
-                        child: Text(
-                          'No transactions found.',
-                          style: GoogleFonts.inter(color: Colors.white70),
-                        ),
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: combined.length,
+                  itemBuilder: (context, index) {
+                    final item = combined[index];
+                    if (item is TransactionModel) {
+                      return _buildTransactionCard(
+                        orderId: item.id,
+                        buyerName: item.buyerName,
+                        farmerName: item.farmerName,
+                        amount: item.amount,
+                        status: item.status,
+                        date: item.timestamp,
+                        type: 'Product',
+                      );
+                    } else {
+                      final order = item as MedicineOrderModel;
+                      return _buildTransactionCard(
+                        orderId: order.id,
+                        buyerName: order.farmerName,
+                        farmerName: order.sellerId,
+                        amount: order.totalAmount,
+                        status: order.status,
+                        date: order.createdAt,
+                        type: 'Medicine',
                       );
                     }
-
-                    return ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: combined.length,
-                      itemBuilder: (context, index) {
-                        final item = combined[index];
-                        if (item is TransactionModel) {
-                          return _buildTransactionCard(
-                            orderId: item.id,
-                            buyerName: item.buyerName,
-                            farmerName: item.farmerName,
-                            amount: item.amount,
-                            status: item.status,
-                            date: item.timestamp,
-                            type: 'Product',
-                          );
-                        } else {
-                          final order = item as MedicineOrderModel;
-                          return _buildTransactionCard(
-                            orderId: order.id,
-                            buyerName: order.farmerName,
-                            farmerName: order.sellerId,
-                            amount: order.totalAmount,
-                            status: order.status,
-                            date: order.createdAt,
-                            type: 'Medicine',
-                          );
-                        }
-                      },
-                    );
                   },
                 );
               },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }

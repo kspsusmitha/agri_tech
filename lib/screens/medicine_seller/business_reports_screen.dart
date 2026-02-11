@@ -16,138 +16,133 @@ class BusinessReportsScreen extends StatelessWidget {
     final orderService = MedicineOrderService();
 
     return Scaffold(
-      body: Stack(
-        children: [
-          const GradientBackground(colors: AppConstants.primaryGradient),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildAppBar(context),
-                Expanded(
-                  child: StreamBuilder<List<MedicineOrderModel>>(
-                    stream: orderService.streamSellerOrders(sellerId),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        );
-                      }
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&q=80&w=1920', // Analytics
+        gradient: AppConstants.primaryGradient,
+        child: Column(
+          children: [
+            const SizedBox(height: kToolbarHeight + 10),
+            _buildAppBar(context),
+            Expanded(
+              child: StreamBuilder<List<MedicineOrderModel>>(
+                stream: orderService.streamSellerOrders(sellerId),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    );
+                  }
 
-                      final orders = snapshot.data ?? [];
-                      // Calculate stats
-                      final totalRevenue = orders.fold(
-                        0.0,
-                        (sum, order) => sum + order.totalAmount,
-                      );
-                      final totalOrders = orders.length;
+                  final orders = snapshot.data ?? [];
+                  // Calculate stats
+                  final totalRevenue = orders.fold(
+                    0.0,
+                    (sum, order) => sum + order.totalAmount,
+                  );
+                  final totalOrders = orders.length;
 
-                      // Process Data for Graph (Last 7 Days)
-                      final Map<String, double> weeklyData = _getWeeklyData(
-                        orders,
-                      );
+                  // Process Data for Graph (Last 7 Days)
+                  final Map<String, double> weeklyData = _getWeeklyData(orders);
 
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Summary Cards
+                        Row(
                           children: [
-                            // Summary Cards
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _buildSummaryCard(
-                                    'Total Revenue',
-                                    '₹${totalRevenue.toStringAsFixed(0)}',
-                                    Icons.currency_rupee_rounded,
-                                    Colors.green,
-                                  ),
-                                ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: _buildSummaryCard(
-                                    'Total Orders',
-                                    '$totalOrders',
-                                    Icons.shopping_bag_rounded,
-                                    Colors.orange,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Weekly Sales Graph
-                            GlassContainer(
-                              padding: const EdgeInsets.all(20),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Weekly Sales Performance',
-                                    style: GoogleFonts.outfit(
-                                      fontSize: 18,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'Last 7 Days',
-                                    style: GoogleFonts.inter(
-                                      fontSize: 12,
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 30),
-
-                                  // Custom Bar Chart
-                                  SizedBox(
-                                    height: 200,
-                                    child: _CustomBarChart(data: weeklyData),
-                                  ),
-                                ],
+                            Expanded(
+                              child: _buildSummaryCard(
+                                'Total Revenue',
+                                '₹${totalRevenue.toStringAsFixed(0)}',
+                                Icons.currency_rupee_rounded,
+                                Colors.green,
                               ),
                             ),
-
-                            const SizedBox(height: 24),
-
-                            // Recent Transactions Header
-                            Text(
-                              'Recent Transactions',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: _buildSummaryCard(
+                                'Total Orders',
+                                '$totalOrders',
+                                Icons.shopping_bag_rounded,
+                                Colors.orange,
                               ),
                             ),
-                            const SizedBox(height: 16),
-
-                            // Recent List
-                            if (orders.isEmpty)
-                              Center(
-                                child: Padding(
-                                  padding: const EdgeInsets.all(32.0),
-                                  child: Text(
-                                    'No transactions yet',
-                                    style: GoogleFonts.inter(
-                                      color: Colors.white70,
-                                    ),
-                                  ),
-                                ),
-                              )
-                            else
-                              ...orders
-                                  .take(5)
-                                  .map((order) => _buildTransactionItem(order)),
                           ],
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ],
+                        const SizedBox(height: 24),
+
+                        // Weekly Sales Graph
+                        GlassContainer(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Weekly Sales Performance',
+                                style: GoogleFonts.outfit(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Last 7 Days',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              const SizedBox(height: 30),
+
+                              // Custom Bar Chart
+                              SizedBox(
+                                height: 200,
+                                child: _CustomBarChart(data: weeklyData),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Recent Transactions Header
+                        Text(
+                          'Recent Transactions',
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Recent List
+                        if (orders.isEmpty)
+                          Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(32.0),
+                              child: Text(
+                                'No transactions yet',
+                                style: GoogleFonts.inter(color: Colors.white70),
+                              ),
+                            ),
+                          )
+                        else
+                          ...orders
+                              .take(5)
+                              .map((order) => _buildTransactionItem(order)),
+                      ],
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

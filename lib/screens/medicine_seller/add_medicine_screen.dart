@@ -4,6 +4,9 @@ import '../../services/medicine_service.dart';
 import '../../services/session_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:convert';
+import '../../widgets/glass_widgets.dart';
+import '../../utils/constants.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AddMedicineScreen extends StatefulWidget {
   final MedicineModel? medicine;
@@ -40,9 +43,7 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
     );
     if (widget.medicine != null) {
       _category = widget.medicine!.category;
-      _imageBase64 = widget
-          .medicine!
-          .imageUrl; // Using imageUrl as base64 for consistency with other modules
+      _imageBase64 = widget.medicine!.imageUrl;
     }
   }
 
@@ -55,21 +56,12 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       );
 
       if (pickedFile != null) {
-        debugPrint('🔵 [Add Medicine] Image picked: ${pickedFile.path}');
-        // Read bytes directly from XFile (cross-platform safe)
         final bytes = await pickedFile.readAsBytes();
-
         setState(() {
           _imageBase64 = base64Encode(bytes);
         });
-        debugPrint(
-          '✅ [Add Medicine] Image encoded to base64 (length: ${_imageBase64?.length})',
-        );
-      } else {
-        debugPrint('⚠️ [Add Medicine] No image picked');
       }
     } catch (e) {
-      debugPrint('❌ [Add Medicine] Error picking image: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -110,14 +102,15 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
             content: Text(
               'Medicine ${widget.medicine == null ? "added" : "updated"} successfully',
             ),
+            backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red),
+        );
       }
     } finally {
       setState(() => _isLoading = false);
@@ -127,134 +120,216 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBodyBehindAppBar: true,
       appBar: AppBar(
-        title: Text(widget.medicine == null ? 'Add Medicine' : 'Edit Medicine'),
+        title: Text(
+          widget.medicine == null ? 'Add Medicine' : 'Edit Medicine',
+          style: GoogleFonts.outfit(
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: Container(
+          margin: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    GestureDetector(
-                      onTap: _pickImage,
-                      child: Container(
-                        height: 180,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[300]!),
-                        ),
-                        child: _imageBase64 != null
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
-                                child: Image.memory(
-                                  base64Decode(_imageBase64!),
-                                  fit: BoxFit.cover,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&q=80&w=1920', // Lab/Chemistry
+        gradient: AppConstants.purpleGradient,
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              )
+            : SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  16,
+                  kToolbarHeight + 20,
+                  16,
+                  16,
+                ),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      GlassContainer(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            GestureDetector(
+                              onTap: _pickImage,
+                              child: Container(
+                                height: 180,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.05),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.white24),
                                 ),
-                              )
-                            : const Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.add_a_photo,
-                                    size: 40,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 8),
-                                  Text(
-                                    'Add Product Image',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ],
+                                child: _imageBase64 != null
+                                    ? ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.memory(
+                                          base64Decode(_imageBase64!),
+                                          fit: BoxFit.cover,
+                                        ),
+                                      )
+                                    : Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.add_a_photo_rounded,
+                                            size: 40,
+                                            color: Colors.white54,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Tap to add image',
+                                            style: GoogleFonts.inter(
+                                              color: Colors.white54,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                               ),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    TextFormField(
-                      controller: _nameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Medicine Name',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => v!.isEmpty ? 'Enter name' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      value: _category,
-                      decoration: const InputDecoration(
-                        labelText: 'Category',
-                        border: OutlineInputBorder(),
-                      ),
-                      items:
-                          [
-                                'Fertilizer',
-                                'Pesticide',
-                                'Fungicide',
-                                'Herbicide',
-                                'Growth Booster',
-                              ]
-                              .map(
-                                (c) =>
-                                    DropdownMenuItem(value: c, child: Text(c)),
-                              )
-                              .toList(),
-                      onChanged: (v) => setState(() => _category = v!),
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _targetDiseaseController,
-                      decoration: const InputDecoration(
-                        labelText: 'Target Disease/Problem',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (v) => v!.isEmpty ? 'Enter target' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _priceController,
-                      decoration: const InputDecoration(
-                        labelText: 'Price (₹)',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.number,
-                      validator: (v) => v!.isEmpty ? 'Enter price' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _instructionsController,
-                      decoration: const InputDecoration(
-                        labelText: 'Instructions for Use',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                      validator: (v) =>
-                          v!.isEmpty ? 'Enter instructions' : null,
-                    ),
-                    const SizedBox(height: 32),
-                    ElevatedButton(
-                      onPressed: _save,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildGlassTextField(
+                              controller: _nameController,
+                              label: 'Medicine Name',
+                              icon: Icons.medication_rounded,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildGlassDropdown(),
+                            const SizedBox(height: 16),
+                            _buildGlassTextField(
+                              controller: _targetDiseaseController,
+                              label: 'Target Disease/Problem',
+                              icon: Icons.bug_report_rounded,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildGlassTextField(
+                              controller: _priceController,
+                              label: 'Price (₹)',
+                              icon: Icons.currency_rupee_rounded,
+                              keyboardType: TextInputType.number,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildGlassTextField(
+                              controller: _instructionsController,
+                              label: 'Instructions for Use',
+                              icon: Icons.description_rounded,
+                              maxLines: 3,
+                            ),
+                            const SizedBox(height: 32),
+                            ElevatedButton(
+                              onPressed: _save,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.purpleAccent,
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 0,
+                              ),
+                              child: Text(
+                                widget.medicine == null
+                                    ? 'ADD TO INVENTORY'
+                                    : 'SAVE CHANGES',
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 1,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      child: Text(
-                        widget.medicine == null
-                            ? 'Add to Inventory'
-                            : 'Save Changes',
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
+      ),
+    );
+  }
+
+  Widget _buildGlassTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    int maxLines = 1,
+  }) {
+    return TextFormField(
+      controller: controller,
+      style: const TextStyle(color: Colors.white),
+      keyboardType: keyboardType,
+      maxLines: maxLines,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(color: Colors.white60),
+        prefixIcon: Icon(icon, color: Colors.white60, size: 20),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.purpleAccent),
+        ),
+      ),
+      validator: (v) => v!.isEmpty ? 'Required' : null,
+    );
+  }
+
+  Widget _buildGlassDropdown() {
+    return DropdownButtonFormField<String>(
+      value: _category,
+      dropdownColor: const Color(0xff2d1a4e), // Dark purple for dropdown
+      style: const TextStyle(color: Colors.white),
+      decoration: InputDecoration(
+        labelText: 'Category',
+        labelStyle: const TextStyle(color: Colors.white60),
+        prefixIcon: const Icon(
+          Icons.category_rounded,
+          color: Colors.white60,
+          size: 20,
+        ),
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
+      ),
+      items: [
+        'Fertilizer',
+        'Pesticide',
+        'Fungicide',
+        'Herbicide',
+        'Growth Booster',
+      ].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+      onChanged: (v) => setState(() => _category = v!),
     );
   }
 }

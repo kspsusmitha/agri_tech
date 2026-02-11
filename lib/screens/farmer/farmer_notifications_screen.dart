@@ -40,37 +40,35 @@ class _FarmerNotificationsScreenState extends State<FarmerNotificationsScreen> {
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          const GradientBackground(colors: AppConstants.primaryGradient),
-          SafeArea(
-            child: StreamBuilder<List<NotificationModel>>(
-              stream: _notificationService.streamNotifications(_userId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  );
-                }
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?auto=format&fit=crop&q=80&w=1920', // Farm fields
+        gradient: AppConstants.primaryGradient,
+        child: StreamBuilder<List<NotificationModel>>(
+          stream: _notificationService.streamNotifications(_userId),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              );
+            }
 
-                final notifications = snapshot.data ?? [];
+            final notifications = snapshot.data ?? [];
 
-                if (notifications.isEmpty) {
-                  return _buildEmptyState();
-                }
+            if (notifications.isEmpty) {
+              return _buildEmptyState();
+            }
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: notifications.length,
-                  itemBuilder: (context, index) {
-                    final notification = notifications[index];
-                    return _buildNotificationCard(notification);
-                  },
-                );
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: notifications.length,
+              itemBuilder: (context, index) {
+                final notification = notifications[index];
+                return _buildNotificationCard(notification);
               },
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
     );
   }

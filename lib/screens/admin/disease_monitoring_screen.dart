@@ -29,8 +29,10 @@ class _DiseaseMonitoringScreenState extends State<DiseaseMonitoringScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1596706060144-88fd7f053538?auto=format&fit=crop&q=80&w=1920', // Plant leaf/Nature
+        gradient: AppConstants.purpleGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 40),

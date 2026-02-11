@@ -39,8 +39,10 @@ class _CropManagementScreenState extends State<CropManagementScreen> {
           ),
         ],
       ),
-      body: GradientBackground(
-        colors: AppConstants.primaryGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1920', // Farm landscape
+        gradient: AppConstants.primaryGradient,
         child: SafeArea(
           child: StreamBuilder<List<CropModel>>(
             stream: _cropService.streamFarmerCrops(_farmerId),

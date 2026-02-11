@@ -52,8 +52,10 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
           ),
         ],
       ),
-      body: GradientBackground(
-        colors: AppConstants.oceanGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1504608524841-42fe6f032b4b?auto=format&fit=crop&q=80&w=1920', // Weather/Sky
+        gradient: AppConstants.oceanGradient,
         child: _isLoading
             ? const Center(
                 child: CircularProgressIndicator(

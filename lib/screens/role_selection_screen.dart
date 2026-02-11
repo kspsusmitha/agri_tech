@@ -11,119 +11,98 @@ class RoleSelectionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Stack(
-        children: [
-          // Background Gradient & Image
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: AppConstants.primaryGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1920',
+        gradient: AppConstants.primaryGradient,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Column(
+            children: [
+              const SizedBox(height: 20),
+              // Animated Logo Area
+              TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0.0, end: 1.0),
+                duration: const Duration(seconds: 1),
+                builder: (context, value, child) {
+                  return Transform.scale(
+                    scale: value,
+                    child: Opacity(opacity: value, child: child),
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withOpacity(0.2),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Icon(
+                    Icons.agriculture,
+                    size: 80,
+                    color: Colors.white,
+                  ),
+                ),
               ),
-            ),
-          ),
-          Opacity(
-            opacity: 0.3,
-            child: Image.network(
-              'https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=1920',
-              fit: BoxFit.cover,
-              width: double.infinity,
-              height: double.infinity,
-            ),
-          ),
-
-          SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: Column(
-                children: [
-                  const SizedBox(height: 20),
-                  // Animated Logo Area
-                  TweenAnimationBuilder<double>(
-                    tween: Tween(begin: 0.0, end: 1.0),
-                    duration: const Duration(seconds: 1),
-                    builder: (context, value, child) {
-                      return Transform.scale(
-                        scale: value,
-                        child: Opacity(opacity: value, child: child),
-                      );
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.2),
-                        border: Border.all(color: Colors.white24),
-                      ),
-                      child: const Icon(
-                        Icons.agriculture,
-                        size: 80,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Farm Tech',
-                    style: GoogleFonts.outfit(
-                      fontSize: 42,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 1.2,
-                    ),
-                  ),
-                  Text(
-                    'Empowering Agriculture with AI',
-                    style: GoogleFonts.inter(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.8),
-                      fontWeight: FontWeight.w300,
-                    ),
-                  ),
-                  const SizedBox(height: 60),
-
-                  // Role Cards with Glassmorphism
-                  _buildGlassRoleCard(
-                    context,
-                    title: 'Administrator',
-                    icon: Icons.admin_panel_settings_rounded,
-                    description: 'Full system oversight & management',
-                    gradient: AppConstants.oceanGradient,
-                    onTap: () => _navigateToLogin(context, 'admin'),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildGlassRoleCard(
-                    context,
-                    title: 'Farmer',
-                    icon: Icons.eco_rounded,
-                    description: 'Crop management & disease insights',
-                    gradient: AppConstants.primaryGradient,
-                    onTap: () => _showFarmerOptions(context),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildGlassRoleCard(
-                    context,
-                    title: 'Direct Buyer',
-                    icon: Icons.shopping_basket_rounded,
-                    description: 'Purchase fresh produce directly',
-                    gradient: AppConstants.sunsetGradient,
-                    onTap: () => _showBuyerOptions(context),
-                  ),
-                  const SizedBox(height: 20),
-                  _buildGlassRoleCard(
-                    context,
-                    title: 'Medicine Seller',
-                    icon: Icons.medical_services_rounded,
-                    description: 'Commercial supplier marketplace',
-                    gradient: AppConstants.purpleGradient,
-                    onTap: () => _showMedicineSellerOptions(context),
-                  ),
-                ],
+              const SizedBox(height: 24),
+              Text(
+                'Farm Tech',
+                style: GoogleFonts.outfit(
+                  fontSize: 42,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                  letterSpacing: 1.2,
+                ),
               ),
-            ),
+              Text(
+                'Empowering Agriculture with AI',
+                style: GoogleFonts.inter(
+                  fontSize: 16,
+                  color: Colors.white.withOpacity(0.8),
+                  fontWeight: FontWeight.w300,
+                ),
+              ),
+              const SizedBox(height: 60),
+
+              // Role Cards with Glassmorphism
+              _buildGlassRoleCard(
+                context,
+                title: 'Administrator',
+                icon: Icons.admin_panel_settings_rounded,
+                description: 'Full system oversight & management',
+                gradient: AppConstants.oceanGradient,
+                onTap: () => _navigateToLogin(context, 'admin'),
+              ),
+              const SizedBox(height: 20),
+              _buildGlassRoleCard(
+                context,
+                title: 'Farmer',
+                icon: Icons.eco_rounded,
+                description: 'Crop management & disease insights',
+                gradient: AppConstants.primaryGradient,
+                onTap: () => _showFarmerOptions(context),
+              ),
+              const SizedBox(height: 20),
+              _buildGlassRoleCard(
+                context,
+                title: 'Direct Buyer',
+                icon: Icons.shopping_basket_rounded,
+                description: 'Purchase fresh produce directly',
+                gradient: AppConstants.sunsetGradient,
+                onTap: () => _showBuyerOptions(context),
+              ),
+              const SizedBox(height: 20),
+              _buildGlassRoleCard(
+                context,
+                title: 'Medicine Seller',
+                icon: Icons.medical_services_rounded,
+                description: 'Commercial supplier marketplace',
+                gradient: AppConstants.purpleGradient,
+                onTap: () => _showMedicineSellerOptions(context),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -65,89 +65,87 @@ class _MedicineSellerDashboardScreenState
           final medicines = snapshot.data ?? [];
           final totalStock = medicines.length;
 
-          return Stack(
-            children: [
-              const GradientBackground(colors: AppConstants.purpleGradient),
-              SafeArea(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 0,
-                    vertical: 0,
+          return ScreenBackground(
+            imagePath:
+                'https://images.unsplash.com/photo-1587854692152-cbe660dbde88?auto=format&fit=crop&q=80&w=1920', // Pharmacy/Medicine
+            gradient: AppConstants.purpleGradient,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 0,
+                vertical: kToolbarHeight + 10,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 10),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: ImageSlider(
+                      imageUrls: [
+                        'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&q=80&w=800',
+                        'https://images.unsplash.com/photo-1587350846564-929344161a33?auto=format&fit=crop&q=80&w=800',
+                      ],
+                    ),
                   ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const SizedBox(height: 10),
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: ImageSlider(
-                          imageUrls: [
-                            'https://images.unsplash.com/photo-1584036561566-baf8f5f1b144?auto=format&fit=crop&q=80&w=800',
-                            'https://images.unsplash.com/photo-1587350846564-929344161a33?auto=format&fit=crop&q=80&w=800',
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Commercial Dashboard',
-                              style: GoogleFonts.outfit(
-                                fontSize: 26,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            ),
-                            Text(
-                              'Grow your business with Agri-Tech.',
-                              style: GoogleFonts.inter(
-                                fontSize: 14,
-                                color: Colors.white70,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildGlassStatsRow(context, totalStock),
-                      ),
-                      const SizedBox(height: 32),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text(
-                          'Business Operations',
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Commercial Dashboard',
                           style: GoogleFonts.outfit(
-                            fontSize: 20,
+                            fontSize: 26,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildQuickActionsGrid(context),
-                      ),
-                      const SizedBox(height: 32),
-
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: _buildRecentMedicinesGlass(context, medicines),
-                      ),
-                      const SizedBox(height: 40),
-                    ],
+                        Text(
+                          'Grow your business with Agri-Tech.',
+                          style: GoogleFonts.inter(
+                            fontSize: 14,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 24),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildGlassStatsRow(context, totalStock),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Text(
+                      'Business Operations',
+                      style: GoogleFonts.outfit(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildQuickActionsGrid(context),
+                  ),
+                  const SizedBox(height: 32),
+
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: _buildRecentMedicinesGlass(context, medicines),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-            ],
+            ),
           );
         },
       ),

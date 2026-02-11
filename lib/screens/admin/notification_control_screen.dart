@@ -28,8 +28,10 @@ class _NotificationControlScreenState extends State<NotificationControlScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1577563908411-5077b6dc7624?auto=format&fit=crop&q=80&w=1920', // Speaker/Broadcast/Neon
+        gradient: AppConstants.purpleGradient,
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: Column(

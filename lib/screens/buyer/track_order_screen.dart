@@ -33,28 +33,28 @@ class TrackOrderScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: GradientBackground(
-        colors: AppConstants.oceanGradient,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildOrderInfoCard(),
-                const SizedBox(height: 32),
-                Text(
-                  'Order Status',
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?auto=format&fit=crop&q=80&w=1920', // Logistics/Packages
+        gradient: AppConstants.oceanGradient,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, kToolbarHeight + 20, 20, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildOrderInfoCard(),
+              const SizedBox(height: 32),
+              Text(
+                'Order Status',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
-                const SizedBox(height: 16),
-                _buildTimeline(),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              _buildTimeline(),
+            ],
           ),
         ),
       ),

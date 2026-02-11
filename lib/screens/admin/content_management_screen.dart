@@ -49,8 +49,10 @@ class _ContentManagementScreenState extends State<ContentManagementScreen>
           ],
         ),
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1549419134-2e259e218228?auto=format&fit=crop&q=80&w=1920', // Books/Library/Knowledge
+        gradient: AppConstants.purpleGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 80),

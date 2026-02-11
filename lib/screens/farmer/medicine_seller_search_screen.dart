@@ -48,8 +48,10 @@ class _MedicineSellerSearchScreenState
           ),
         ],
       ),
-      body: GradientBackground(
-        colors: AppConstants.deepBlueGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1576602976047-174e57a47881?auto=format&fit=crop&q=80&w=1920', // Pharmacy/Medical
+        gradient: AppConstants.deepBlueGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 40),

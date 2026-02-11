@@ -29,8 +29,10 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1615937651199-6310bfdaf81e?auto=format&fit=crop&q=80&w=1920', // Warehouse/Product
+        gradient: AppConstants.purpleGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 40),

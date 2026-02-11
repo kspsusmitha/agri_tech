@@ -107,8 +107,10 @@ class _DiseaseDetectionScreenState extends State<DiseaseDetectionScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.primaryGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1530836369250-ef72a3f5cda8?auto=format&fit=crop&q=80&w=1920', // Leaf/Plant closeup
+        gradient: AppConstants.primaryGradient,
         child: SafeArea(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(20),

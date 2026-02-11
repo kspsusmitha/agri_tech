@@ -35,8 +35,10 @@ class _LearningVideosScreenState extends State<LearningVideosScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&q=80&w=1920', // Education/Classroom
+        gradient: AppConstants.purpleGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 40),

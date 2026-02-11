@@ -65,8 +65,10 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: GradientBackground(
-        colors: AppConstants.primaryGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1523348837708-15d4a09cfac2?auto=format&fit=crop&q=80&w=1920', // Abstract leaf/farm
+        gradient: AppConstants.primaryGradient,
         child: Stack(
           children: [
             // Decorative circles

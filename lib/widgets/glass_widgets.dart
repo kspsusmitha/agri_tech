@@ -59,29 +59,68 @@ class GlassContainer extends StatelessWidget {
   }
 }
 
-class GradientBackground extends StatelessWidget {
-  final Widget? child;
-  final List<Color> colors;
+class ScreenBackground extends StatelessWidget {
+  final Widget child;
+  final String? imagePath;
+  final List<Color> gradient;
 
-  const GradientBackground({
+  const ScreenBackground({
     super.key,
-    this.child,
-    this.colors = AppConstants.primaryGradient,
+    required this.child,
+    this.imagePath =
+        'https://images.unsplash.com/photo-1500382017468-9049fed747ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1932&q=80', // Default farm image
+    this.gradient = AppConstants.primaryGradient,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: colors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return Stack(
+      children: [
+        // Background Image with Fade In
+        if (imagePath != null)
+          Positioned.fill(
+            child: Image.network(
+              imagePath!,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return Container(
+                  color: Colors.black,
+                ); // Placeholder while loading
+              },
+              errorBuilder: (context, error, stackTrace) {
+                return Container(color: Colors.black); // Fallback color
+              },
+              frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+                if (wasSynchronouslyLoaded) return child;
+                return AnimatedOpacity(
+                  opacity: frame == null ? 0 : 1,
+                  duration: const Duration(seconds: 1),
+                  curve: Curves.easeOut,
+                  child: child,
+                );
+              },
+            ),
+          ),
+
+        // Gradient Overlay
+        Positioned.fill(
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: gradient
+                    .map((c) => c.withOpacity(0.85))
+                    .toList(), // High opacity to ensure text readability
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
         ),
-      ),
-      child: child,
+
+        // Content
+        SafeArea(child: child),
+      ],
     );
   }
 }

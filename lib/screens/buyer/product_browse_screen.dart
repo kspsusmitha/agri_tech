@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../utils/constants.dart';
+
 import '../../services/product_service.dart';
 import '../../services/cart_service.dart';
 import '../../services/session_service.dart';
@@ -86,61 +86,55 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
           ),
         ],
       ),
-      body: Stack(
+      backgroundColor: Colors.transparent, // Allow parent background to show
+      body: Column(
         children: [
-          const GradientBackground(colors: AppConstants.sunsetGradient),
-          SafeArea(
-            child: Column(
-              children: [
-                _buildSearchBarGlass(),
-                _buildCategoryFilterGlass(),
-                Expanded(
-                  child: StreamBuilder<List<ProductModel>>(
-                    stream: _productService.streamApprovedProducts(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(
-                          child: CircularProgressIndicator(color: Colors.white),
-                        );
-                      }
+          const SizedBox(height: kToolbarHeight + 20), // Space for AppBar
+          _buildSearchBarGlass(),
+          _buildCategoryFilterGlass(),
+          Expanded(
+            child: StreamBuilder<List<ProductModel>>(
+              stream: _productService.streamApprovedProducts(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: CircularProgressIndicator(color: Colors.white),
+                  );
+                }
 
-                      final products = snapshot.data ?? [];
-                      final filteredProducts = products.where((p) {
-                        final matchesCategory =
-                            _selectedCategory == 'All' ||
-                            p.category == _selectedCategory;
-                        final matchesSearch = p.name.toLowerCase().contains(
-                          _searchQuery.toLowerCase(),
-                        );
-                        return matchesCategory && matchesSearch;
-                      }).toList();
+                final products = snapshot.data ?? [];
+                final filteredProducts = products.where((p) {
+                  final matchesCategory =
+                      _selectedCategory == 'All' ||
+                      p.category == _selectedCategory;
+                  final matchesSearch = p.name.toLowerCase().contains(
+                    _searchQuery.toLowerCase(),
+                  );
+                  return matchesCategory && matchesSearch;
+                }).toList();
 
-                      if (filteredProducts.isEmpty) {
-                        return Center(
-                          child: Text(
-                            'No products found.',
-                            style: GoogleFonts.inter(color: Colors.white70),
-                          ),
-                        );
-                      }
+                if (filteredProducts.isEmpty) {
+                  return Center(
+                    child: Text(
+                      'No products found.',
+                      style: GoogleFonts.inter(color: Colors.white70),
+                    ),
+                  );
+                }
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 16,
-                              childAspectRatio: 0.75,
-                            ),
-                        itemCount: filteredProducts.length,
-                        itemBuilder: (context, index) =>
-                            _buildProductCardGlass(filteredProducts[index]),
-                      );
-                    },
+                return GridView.builder(
+                  padding: const EdgeInsets.all(16),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 0.75,
                   ),
-                ),
-              ],
+                  itemCount: filteredProducts.length,
+                  itemBuilder: (context, index) =>
+                      _buildProductCardGlass(filteredProducts[index]),
+                );
+              },
             ),
           ),
         ],

@@ -106,184 +106,182 @@ class _LoginScreenState extends State<LoginScreen> {
     final roleGradient = _getRoleGradient(widget.selectedRole);
 
     return Scaffold(
-      body: GradientBackground(
-        colors: roleGradient,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 20),
-                    // Back button
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GlassContainer(
-                        borderRadius: 50,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 40),
-                    // Icon
-                    Center(
-                      child: GlassContainer(
-                        borderRadius: 100,
-                        padding: const EdgeInsets.all(24),
-                        child: Icon(
-                          _getRoleIcon(widget.selectedRole),
-                          size: 70,
+      body: ScreenBackground(
+        gradient: roleGradient,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+                  // Back button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GlassContainer(
+                      borderRadius: 50,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
                           color: Colors.white,
                         ),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                    const SizedBox(height: 32),
-                    // Title
-                    Text(
-                      '${widget.selectedRole.toUpperCase()} LOGIN',
-                      style: GoogleFonts.outfit(
-                        fontSize: 32,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
-                        letterSpacing: 2,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Welcome back! Please login to continue',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 48),
-
-                    // Glass Form
-                    GlassContainer(
+                  ),
+                  const SizedBox(height: 40),
+                  // Icon
+                  Center(
+                    child: GlassContainer(
+                      borderRadius: 100,
                       padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          // Email field
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                            hint: 'Enter your email',
-                            icon: Icons.email_outlined,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 24),
-                          // Password field
-                          _buildTextField(
-                            controller: _passwordController,
-                            label: 'Password',
-                            hint: 'Enter your password',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                            obscureText: _obscurePassword,
-                            onTogglePassword: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                        ],
+                      child: Icon(
+                        _getRoleIcon(widget.selectedRole),
+                        size: 70,
+                        color: Colors.white,
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 32),
+                  // Title
+                  Text(
+                    '${widget.selectedRole.toUpperCase()} LOGIN',
+                    style: GoogleFonts.outfit(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Welcome back! Please login to continue',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
 
-                    const SizedBox(height: 40),
-
-                    // Login button
-                    Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleLogin,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: roleGradient[0],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
+                  // Glass Form
+                  GlassContainer(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        // Email field
+                        _buildTextField(
+                          controller: _emailController,
+                          label: 'Email',
+                          hint: 'Enter your email',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.blue,
-                                  ),
-                                ),
-                              )
-                            : Text(
-                                'LOGIN',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
+                        const SizedBox(height: 24),
+                        // Password field
+                        _buildTextField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          hint: 'Enter your password',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          obscureText: _obscurePassword,
+                          onTogglePassword: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 40),
+
+                  // Login button
+                  Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: roleGradient[0],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue,
                                 ),
                               ),
+                            )
+                          : Text(
+                              'LOGIN',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+                  // Admin credentials hint
+                  if (widget.selectedRole.toLowerCase() == 'admin')
+                    GlassContainer(
+                      padding: const EdgeInsets.all(12),
+                      borderRadius: 12,
+                      child: Text(
+                        'DEFAULT: admin@farmtech.com / admin123',
+                        style: GoogleFonts.inter(
+                          fontSize: 12,
+                          color: Colors.white.withOpacity(0.8),
+                          fontStyle: FontStyle.italic,
+                          letterSpacing: 1,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ),
-
-                    const SizedBox(height: 24),
-                    // Admin credentials hint
-                    if (widget.selectedRole.toLowerCase() == 'admin')
-                      GlassContainer(
-                        padding: const EdgeInsets.all(12),
-                        borderRadius: 12,
-                        child: Text(
-                          'DEFAULT: admin@farmtech.com / admin123',
-                          style: GoogleFonts.inter(
-                            fontSize: 12,
-                            color: Colors.white.withOpacity(0.8),
-                            fontStyle: FontStyle.italic,
-                            letterSpacing: 1,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),

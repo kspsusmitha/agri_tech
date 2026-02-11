@@ -118,228 +118,226 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     final roleGradient = _getRoleGradient(widget.selectedRole);
 
     return Scaffold(
-      body: GradientBackground(
-        colors: roleGradient,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 20),
-                    // Back button
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: GlassContainer(
-                        borderRadius: 50,
-                        child: IconButton(
-                          icon: const Icon(
-                            Icons.arrow_back_rounded,
-                            color: Colors.white,
-                          ),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    // Icon
-                    Center(
-                      child: GlassContainer(
-                        borderRadius: 100,
-                        padding: const EdgeInsets.all(20),
-                        child: Icon(
-                          _getRoleIcon(widget.selectedRole),
-                          size: 60,
+      body: ScreenBackground(
+        gradient: roleGradient,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 20),
+                  // Back button
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: GlassContainer(
+                      borderRadius: 50,
+                      child: IconButton(
+                        icon: const Icon(
+                          Icons.arrow_back_rounded,
                           color: Colors.white,
                         ),
+                        onPressed: () => Navigator.pop(context),
                       ),
                     ),
-                    const SizedBox(height: 24),
-                    // Title
-                    Text(
-                      '${widget.selectedRole.toUpperCase()} REGISTRATION',
-                      style: GoogleFonts.outfit(
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 30),
+                  // Icon
+                  Center(
+                    child: GlassContainer(
+                      borderRadius: 100,
+                      padding: const EdgeInsets.all(20),
+                      child: Icon(
+                        _getRoleIcon(widget.selectedRole),
+                        size: 60,
                         color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Create your account to get started',
-                      style: GoogleFonts.inter(
-                        fontSize: 16,
-                        color: Colors.white.withOpacity(0.7),
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 40),
-
-                    // Glass Form
-                    GlassContainer(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        children: [
-                          _buildTextField(
-                            controller: _nameController,
-                            label: 'Full Name',
-                            hint: 'Enter your full name',
-                            icon: Icons.person_outline,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your name';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _emailController,
-                            label: 'Email',
-                            hint: 'Enter your email',
-                            icon: Icons.email_outlined,
-                            keyboardType: TextInputType.emailAddress,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your email';
-                              }
-                              if (!value.contains('@')) {
-                                return 'Please enter a valid email';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _phoneController,
-                            label: 'Phone Number',
-                            hint: '10-digit phone number',
-                            icon: Icons.phone_outlined,
-                            keyboardType: TextInputType.number,
-                            maxLength: 10,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your phone number';
-                              }
-                              if (value.length != 10) {
-                                return 'Phone number must be 10 digits';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _passwordController,
-                            label: 'Password',
-                            hint: 'At least 6 characters',
-                            icon: Icons.lock_outline,
-                            isPassword: true,
-                            obscureText: _obscurePassword,
-                            onTogglePassword: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your password';
-                              }
-                              if (value.length < 6) {
-                                return 'Password must be at least 6 characters';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _confirmPasswordController,
-                            label: 'Confirm Password',
-                            hint: 'Re-enter your password',
-                            icon: Icons.lock_clock_outlined,
-                            isPassword: true,
-                            obscureText: _obscureConfirmPassword,
-                            onTogglePassword: () {
-                              setState(() {
-                                _obscureConfirmPassword =
-                                    !_obscureConfirmPassword;
-                              });
-                            },
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please confirm your password';
-                              }
-                              if (value != _passwordController.text) {
-                                return 'Passwords do not match';
-                              }
-                              return null;
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _addressController,
-                            label: 'Address (Optional)',
-                            hint: 'Enter your address',
-                            icon: Icons.location_on_outlined,
-                            maxLines: 2,
-                          ),
-                        ],
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 24),
+                  // Title
+                  Text(
+                    '${widget.selectedRole.toUpperCase()} REGISTRATION',
+                    style: GoogleFonts.outfit(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 1.5,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Create your account to get started',
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 40),
 
-                    const SizedBox(height: 32),
-
-                    // Register button
-                    Container(
-                      height: 60,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _handleRegistration,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: roleGradient[0],
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          elevation: 0,
+                  // Glass Form
+                  GlassContainer(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        _buildTextField(
+                          controller: _nameController,
+                          label: 'Full Name',
+                          hint: 'Enter your full name',
+                          icon: Icons.person_outline,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your name';
+                            }
+                            return null;
+                          },
                         ),
-                        child: _isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.blue,
-                                  ),
-                                ),
-                              )
-                            : Text(
-                                'REGISTER',
-                                style: GoogleFonts.outfit(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _emailController,
+                          label: 'Email',
+                          hint: 'Enter your email',
+                          icon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _phoneController,
+                          label: 'Phone Number',
+                          hint: '10-digit phone number',
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.number,
+                          maxLength: 10,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your phone number';
+                            }
+                            if (value.length != 10) {
+                              return 'Phone number must be 10 digits';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _passwordController,
+                          label: 'Password',
+                          hint: 'At least 6 characters',
+                          icon: Icons.lock_outline,
+                          isPassword: true,
+                          obscureText: _obscurePassword,
+                          onTogglePassword: () {
+                            setState(() {
+                              _obscurePassword = !_obscurePassword;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            if (value.length < 6) {
+                              return 'Password must be at least 6 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _confirmPasswordController,
+                          label: 'Confirm Password',
+                          hint: 'Re-enter your password',
+                          icon: Icons.lock_clock_outlined,
+                          isPassword: true,
+                          obscureText: _obscureConfirmPassword,
+                          onTogglePassword: () {
+                            setState(() {
+                              _obscureConfirmPassword =
+                                  !_obscureConfirmPassword;
+                            });
+                          },
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _addressController,
+                          label: 'Address (Optional)',
+                          hint: 'Enter your address',
+                          icon: Icons.location_on_outlined,
+                          maxLines: 2,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Register button
+                  Container(
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _handleRegistration,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: roleGradient[0],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.blue,
                                 ),
                               ),
-                      ),
+                            )
+                          : Text(
+                              'REGISTER',
+                              style: GoogleFonts.outfit(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.5,
+                              ),
+                            ),
                     ),
-                    const SizedBox(height: 40),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
             ),
           ),

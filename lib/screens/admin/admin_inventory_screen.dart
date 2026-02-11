@@ -27,8 +27,10 @@ class _AdminInventoryScreenState extends State<AdminInventoryScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: GradientBackground(
-        colors: AppConstants.purpleGradient,
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1587574293340-933051b9161c?auto=format&fit=crop&q=80&w=1920', // Warehouse/Shelves
+        gradient: AppConstants.purpleGradient,
         child: Column(
           children: [
             const SizedBox(height: kToolbarHeight + 40),

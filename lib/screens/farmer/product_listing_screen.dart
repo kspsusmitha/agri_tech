@@ -23,10 +23,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
   final ImageService _imageService = ImageService();
   final SessionService _sessionService = SessionService();
 
-  List<ProductModel> _products = [];
-  List<ProductModel> _filteredProducts = [];
-  bool _isLoading = true;
-
   // Search and filter controllers
   final TextEditingController _searchController = TextEditingController();
   String _selectedCategory = 'All';
@@ -43,69 +39,8 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
     _farmerId = currentUser?.id;
     _farmerName = currentUser?.name;
     _farmerEmail = currentUser?.email;
-    _loadProducts();
-    _searchController.addListener(_filterProducts);
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _loadProducts() async {
-    if (_farmerId == null) {
-      setState(() {
-        _isLoading = false;
-      });
-      return;
-    }
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final products = await _productService.getFarmerProducts(_farmerId!);
-      setState(() {
-        _products = products;
-        _filteredProducts = products;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error loading products: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _filterProducts() {
-    final query = _searchController.text.toLowerCase();
-
-    setState(() {
-      _filteredProducts = _products.where((product) {
-        final matchesSearch =
-            query.isEmpty ||
-            product.name.toLowerCase().contains(query) ||
-            product.description.toLowerCase().contains(query);
-
-        final matchesCategory =
-            _selectedCategory == 'All' || product.category == _selectedCategory;
-
-        final matchesStatus =
-            _selectedStatus == 'All' ||
-            product.status == _selectedStatus.toLowerCase();
-
-        return matchesSearch && matchesCategory && matchesStatus;
-      }).toList();
+    _searchController.addListener(() {
+      if (mounted) setState(() {});
     });
   }
 
@@ -127,70 +62,113 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
           ),
         ],
       ),
-      body: GradientBackground(
-        colors: AppConstants.primaryGradient,
-        child: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.white24),
-              )
-            : Column(
-                children: [
-                  const SizedBox(height: kToolbarHeight + 40),
-                  _buildSearchAndFilterBar(),
-                  Expanded(
-                    child: _filteredProducts.isEmpty && _products.isEmpty
-                        ? _buildEmptyState()
-                        : RefreshIndicator(
-                            onRefresh: _loadProducts,
-                            color: Colors.white,
-                            backgroundColor: Colors.green[800],
-                            child: ListView.builder(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 10,
-                              ),
-                              itemCount: _filteredProducts.length,
-                              itemBuilder: (context, index) {
-                                return _buildProductCard(
-                                  _filteredProducts[index],
-                                );
-                              },
-                            ),
-                          ),
-                  ),
-                ],
+      body: ScreenBackground(
+        imagePath:
+            'https://images.unsplash.com/photo-1615811361523-6bd03c7799a4?auto=format&fit=crop&q=80&w=1920', // Vegetables/Produce
+        gradient: AppConstants.primaryGradient,
+        child: Column(
+          children: [
+            const SizedBox(height: kToolbarHeight + 40),
+            _buildSearchAndFilterBar(),
+            Expanded(
+              child: StreamBuilder<List<ProductModel>>(
+                stream: _productService.streamFarmerProducts(_farmerId!),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white24),
+                    );
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  final products = snapshot.data ?? [];
+
+                  // Filter products locally based on search/category/status
+                  final filteredProducts = products.where((product) {
+                    final query = _searchController.text.toLowerCase();
+                    final matchesSearch =
+                        query.isEmpty ||
+                        product.name.toLowerCase().contains(query) ||
+                        product.description.toLowerCase().contains(query);
+
+                    final matchesCategory =
+                        _selectedCategory == 'All' ||
+                        product.category == _selectedCategory;
+
+                    final matchesStatus =
+                        _selectedStatus == 'All' ||
+                        product.status == _selectedStatus.toLowerCase();
+
+                    return matchesSearch && matchesCategory && matchesStatus;
+                  }).toList();
+
+                  if (filteredProducts.isEmpty && products.isEmpty) {
+                    return _buildEmptyState();
+                  } else if (filteredProducts.isEmpty) {
+                    return Center(
+                      child: Text(
+                        'No products match your filter',
+                        style: GoogleFonts.inter(color: Colors.white70),
+                      ),
+                    );
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                    itemCount: filteredProducts.length,
+                    itemBuilder: (context, index) {
+                      return _buildProductCard(filteredProducts[index]);
+                    },
+                  );
+                },
               ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: GlassContainer(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.inventory_2_rounded, size: 80, color: Colors.white30),
-            const SizedBox(height: 20),
-            Text(
-              'No products listed yet',
-              style: GoogleFonts.inter(color: Colors.white70, fontSize: 18),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: _showAddProductDialog,
-              icon: const Icon(Icons.add_rounded),
-              label: const Text('LIST YOUR FIRST PRODUCT'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: const Color(AppConstants.primaryColorValue),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+      child: SingleChildScrollView(
+        child: GlassContainer(
+          padding: const EdgeInsets.all(40),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.inventory_2_rounded, size: 80, color: Colors.white30),
+              const SizedBox(height: 20),
+              Text(
+                'No products listed yet',
+                style: GoogleFonts.inter(color: Colors.white70, fontSize: 18),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: _showAddProductDialog,
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('LIST YOUR FIRST PRODUCT'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(AppConstants.primaryColorValue),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -254,7 +232,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
                     setState(() {
                       _selectedCategory = value!;
                     });
-                    _filterProducts();
                   },
                 ),
               ),
@@ -268,7 +245,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
                     setState(() {
                       _selectedStatus = value!;
                     });
-                    _filterProducts();
                   },
                 ),
               ),
@@ -634,7 +610,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
         Navigator.pop(context); // Close dialog
 
         if (result['success'] == true) {
-          _loadProducts();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Product listed! Waiting for approval.'),
@@ -832,7 +807,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
         Navigator.pop(context);
 
         if (result['success'] == true) {
-          _loadProducts();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Product updated!'),
@@ -1058,7 +1032,6 @@ class _ProductListingScreenState extends State<ProductListingScreen> {
                 if (mounted) {
                   Navigator.pop(context);
                   if (result['success'] == true) {
-                    _loadProducts();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Product deleted')),
                     );
