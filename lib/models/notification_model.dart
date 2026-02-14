@@ -44,4 +44,25 @@ class NotificationModel {
       isRead: json['isRead'] ?? false,
     );
   }
+  NotificationModel copyWith({
+    String? id,
+    String? userId,
+    String? title,
+    String? message,
+    String? type,
+    String? relatedId,
+    DateTime? timestamp,
+    bool? isRead,
+  }) {
+    return NotificationModel(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      type: type ?? this.type,
+      relatedId: relatedId ?? this.relatedId,
+      timestamp: timestamp ?? this.timestamp,
+      isRead: isRead ?? this.isRead,
+    );
+  }
 }

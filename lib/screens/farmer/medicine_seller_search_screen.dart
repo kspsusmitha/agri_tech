@@ -6,7 +6,8 @@ import '../../services/medicine_order_service.dart';
 import '../../services/session_service.dart';
 import '../../utils/constants.dart';
 import '../../widgets/glass_widgets.dart';
-import 'farmer_medicine_orders_screen.dart';
+import 'farmer_orders_screen.dart';
+import '../buyer/buyer_orders_screen.dart';
 import 'dart:convert';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -38,12 +39,26 @@ class _MedicineSellerSearchScreenState
         actions: [
           IconButton(
             icon: const Icon(Icons.history_rounded),
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const FarmerMedicineOrdersScreen(),
-              ),
-            ),
+            onPressed: () {
+              final role = SessionService().user?.role;
+              if (role == 'buyer') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const BuyerOrdersScreen(initialIndex: 1),
+                  ),
+                );
+              } else {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const FarmerOrdersScreen(initialIndex: 1),
+                  ),
+                );
+              }
+            },
             tooltip: 'Order History',
           ),
         ],
@@ -89,7 +104,7 @@ class _MedicineSellerSearchScreenState
 
   Widget _buildMedicineList() {
     return StreamBuilder<List<MedicineModel>>(
-      stream: _medicineService.streamAllMedicines(),
+      stream: _medicineService.streamApprovedMedicines(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -280,137 +295,162 @@ class _MedicineSellerSearchScreenState
     showDialog(
       context: context,
       builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          backgroundColor: const Color(0xff0d1b2a),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
-          title: Text(
-            'Order ${medicine.name}',
-            style: GoogleFonts.outfit(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
+        builder: (context, setDialogState) {
+          bool isProcessing = false;
+          return AlertDialog(
+            backgroundColor: const Color(0xff0d1b2a),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
             ),
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+            title: Text(
+              'Order ${medicine.name}',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isProcessing) ...[
+                    const CircularProgressIndicator(color: Colors.white),
+                    const SizedBox(height: 16),
                     Text(
-                      'Quantity',
+                      'Processing Payment...',
                       style: GoogleFonts.inter(color: Colors.white70),
                     ),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.remove_rounded,
-                              color: Colors.white,
-                            ),
-                            onPressed: quantity > 1
-                                ? () => setDialogState(() => quantity--)
-                                : null,
+                  ] else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Quantity',
+                          style: GoogleFonts.inter(color: Colors.white70),
+                        ),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(12),
                           ),
-                          Text(
-                            '$quantity',
-                            style: GoogleFonts.outfit(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          child: Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.remove_rounded,
+                                  color: Colors.white,
+                                ),
+                                onPressed: quantity > 1
+                                    ? () => setDialogState(() => quantity--)
+                                    : null,
+                              ),
+                              Text(
+                                '$quantity',
+                                style: GoogleFonts.outfit(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.add_rounded,
+                                  color: Colors.white,
+                                ),
+                                onPressed: () =>
+                                    setDialogState(() => quantity++),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                            ),
-                            onPressed: () => setDialogState(() => quantity++),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    _buildDialogField(
+                      addressController,
+                      'Delivery Address',
+                      'Full address...',
+                      maxLines: 2,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDialogField(
+                      phoneController,
+                      'Phone Number',
+                      '10-digit number',
+                      keyboardType: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 24),
+                    const Divider(color: Colors.white10),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Total Amount',
+                          style: GoogleFonts.inter(color: Colors.white38),
+                        ),
+                        Text(
+                          '₹${medicine.price * quantity}',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ],
-                ),
-                const SizedBox(height: 20),
-                _buildDialogField(
-                  addressController,
-                  'Delivery Address',
-                  'Full address...',
-                  maxLines: 2,
-                ),
-                const SizedBox(height: 12),
-                _buildDialogField(
-                  phoneController,
-                  'Phone Number',
-                  '10-digit number',
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 24),
-                const Divider(color: Colors.white10),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Total Amount',
-                      style: GoogleFonts.inter(color: Colors.white38),
-                    ),
-                    Text(
-                      '₹${medicine.price * quantity}',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
+                ],
+              ),
+            ),
+            actions: isProcessing
+                ? []
+                : [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text(
+                        'CANCEL',
+                        style: TextStyle(color: Colors.white70),
                       ),
                     ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (addressController.text.isNotEmpty &&
+                            phoneController.text.isNotEmpty) {
+                          setDialogState(() => isProcessing = true);
+
+                          // SIMULATE PAYMENT
+                          debugPrint('⚠️ SIMULATING PAYMENT...');
+                          await Future.delayed(const Duration(seconds: 3));
+
+                          if (!context.mounted) return;
+
+                          _processOrder(
+                            medicine,
+                            quantity,
+                            addressController.text,
+                            phoneController.text,
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please fill all details'),
+                            ),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.blue[900],
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text('PAY & ORDER'),
+                    ),
                   ],
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'CANCEL',
-                style: TextStyle(color: Colors.white70),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                if (addressController.text.isNotEmpty &&
-                    phoneController.text.isNotEmpty) {
-                  _processOrder(
-                    medicine,
-                    quantity,
-                    addressController.text,
-                    phoneController.text,
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all details')),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.blue[900],
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text('CONFIRM ORDER'),
-            ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -426,7 +466,9 @@ class _MedicineSellerSearchScreenState
       medicineId: medicine.id,
       medicineName: medicine.name,
       farmerId: SessionService().user?.id ?? 'guest',
-      farmerName: SessionService().user?.name ?? 'Farmer',
+      farmerName:
+          SessionService().user?.name ??
+          'Buyer', // Default to Buyer if not farmer
       sellerId: medicine.sellerId,
       price: medicine.price,
       quantity: quantity,
@@ -437,15 +479,35 @@ class _MedicineSellerSearchScreenState
       phone: phone,
     );
 
+    // Add paymentId logic if model supports it, otherwise treating as paid
+
     await _orderService.placeOrder(order);
     if (mounted) {
-      Navigator.pop(context);
+      Navigator.pop(context); // Close dialog
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Order placed successfully!'),
           backgroundColor: Colors.green,
         ),
       );
+
+      // Redirect to Order History
+      final role = SessionService().user?.role;
+      if (role == 'buyer') {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const BuyerOrdersScreen(initialIndex: 1),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const FarmerOrdersScreen(initialIndex: 1),
+          ),
+        );
+      }
     }
   }
 

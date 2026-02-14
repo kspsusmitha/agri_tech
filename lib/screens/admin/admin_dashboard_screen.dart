@@ -8,12 +8,9 @@ import '../../models/product_model.dart';
 import '../role_selection_screen.dart';
 import 'user_management_screen.dart';
 import 'product_approval_screen.dart';
-import 'transactions_screen.dart';
-import 'complaints_screen.dart';
-import 'content_management_screen.dart';
 import 'disease_monitoring_screen.dart';
 import 'community_moderation_screen.dart';
-import 'report_analytics_screen.dart';
+import 'admin_requests_screen.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -305,13 +302,6 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         _buildActionGlassCard(
           context,
-          'Content Management',
-          Icons.auto_stories_rounded,
-          AppConstants.purpleGradient,
-          () => _navigateTo(context, const ContentManagementScreen()),
-        ),
-        _buildActionGlassCard(
-          context,
           'Community Hub',
           Icons.forum_rounded,
           AppConstants.oceanGradient,
@@ -319,24 +309,10 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ),
         _buildActionGlassCard(
           context,
-          'Transactions',
-          Icons.receipt_long_rounded,
-          AppConstants.primaryGradient,
-          () => _navigateTo(context, const TransactionsScreen()),
-        ),
-        _buildActionGlassCard(
-          context,
-          'Support cases',
-          Icons.feedback_rounded,
-          AppConstants.sunsetGradient,
-          () => _navigateTo(context, const ComplaintsScreen()),
-        ),
-        _buildActionGlassCard(
-          context,
-          'System Analytics',
-          Icons.analytics_rounded,
+          'Medicine Requests',
+          Icons.medical_information_rounded,
           AppConstants.purpleGradient,
-          () => _navigateTo(context, const ReportAnalyticsScreen()),
+          () => _navigateTo(context, const AdminRequestsScreen()),
         ),
       ],
     );

@@ -60,4 +60,9 @@ class InventoryService {
       await ref.set(current + change);
     }
   }
+
+  // Alias for compatibility
+  Future<void> deleteInventoryItem(String farmerId, String itemId) async {
+    await deleteItem(farmerId, itemId);
+  }
 }

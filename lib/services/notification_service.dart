@@ -1,4 +1,5 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:flutter/foundation.dart';
 import '../models/notification_model.dart';
 
 class NotificationService {
@@ -8,8 +9,36 @@ class NotificationService {
   Future<void> sendNotification(NotificationModel notification) async {
     await _database
         .child('notifications')
+        .child(notification.userId) // Ensure we use the userId from the model
         .child(notification.id)
         .set(notification.toJson());
+  }
+
+  /// Send notification to all users of a specific role
+  Future<void> sendToRole(String role, NotificationModel notification) async {
+    try {
+      if (role == 'admin') {
+        // Hardcoded admin ID as per AuthService
+        final adminNotification = notification.copyWith(userId: 'admin_001');
+        await sendNotification(adminNotification);
+        return;
+      }
+
+      // Fetch all users for the role from Realtime DB
+      final snapshot = await _database.child('users').child(role).get();
+      if (snapshot.exists) {
+        final usersData = snapshot.value as Map<dynamic, dynamic>;
+        for (var key in usersData.keys) {
+          // Key is the userId
+          final userNotification = notification.copyWith(
+            userId: key.toString(),
+          );
+          await sendNotification(userNotification);
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [Notification Service] Error sending to role $role: $e');
+    }
   }
 
   /// Stream notifications for a specific user

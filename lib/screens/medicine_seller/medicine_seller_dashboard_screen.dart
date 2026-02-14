@@ -6,6 +6,7 @@ import '../role_selection_screen.dart';
 import 'add_medicine_screen.dart';
 import 'medicine_inventory_screen.dart';
 import 'medicine_orders_screen.dart';
+import 'seller_requests_screen.dart';
 import 'business_reports_screen.dart';
 import '../../widgets/glass_widgets.dart';
 import '../../utils/constants.dart';
@@ -236,6 +237,13 @@ class _MedicineSellerDashboardScreenState
           Icons.add_circle_rounded,
           AppConstants.sunsetGradient,
           () => _navigateTo(context, const AddMedicineScreen()),
+        ),
+        _buildActionGlassCard(
+          context,
+          'Market Demands',
+          Icons.campaign_rounded,
+          AppConstants.oceanGradient,
+          () => _navigateTo(context, const SellerRequestsScreen()),
         ),
         _buildActionGlassCard(
           context,

@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import '../../utils/constants.dart';
 import '../../models/product_model.dart';
-import '../../services/product_firestore_service.dart';
+import '../../services/product_service.dart';
 import '../../services/image_service.dart';
 import '../../services/session_service.dart';
 import '../../widgets/glass_widgets.dart';
@@ -19,7 +19,7 @@ class ProductListingScreen extends StatefulWidget {
 }
 
 class _ProductListingScreenState extends State<ProductListingScreen> {
-  final ProductFirestoreService _productService = ProductFirestoreService();
+  final ProductService _productService = ProductService();
   final ImageService _imageService = ImageService();
   final SessionService _sessionService = SessionService();
 

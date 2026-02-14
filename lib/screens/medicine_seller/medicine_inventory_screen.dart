@@ -200,6 +200,30 @@ class MedicineInventoryScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: _getStatusColor(medicine.status).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: _getStatusColor(
+                          medicine.status,
+                        ).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      medicine.status.toUpperCase(),
+                      style: GoogleFonts.inter(
+                        color: _getStatusColor(medicine.status),
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -277,5 +301,17 @@ class MedicineInventoryScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.greenAccent;
+      case 'rejected':
+        return Colors.redAccent;
+      case 'pending':
+      default:
+        return Colors.orangeAccent;
+    }
   }
 }

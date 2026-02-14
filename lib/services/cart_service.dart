@@ -32,6 +32,7 @@ class CartService {
         'farmerId': product.farmerId,
         'farmerName': product.farmerName,
         'imageBase64': product.imageBase64,
+        'imageUrl': product.imageUrl,
       });
     }
   }

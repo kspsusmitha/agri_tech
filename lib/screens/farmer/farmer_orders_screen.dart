@@ -4,11 +4,14 @@ import '../../utils/constants.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../models/order_model.dart';
+import '../../models/medicine_order_model.dart';
 import '../../services/order_service.dart';
+import '../../services/medicine_order_service.dart';
 import '../../services/session_service.dart';
 
 class FarmerOrdersScreen extends StatefulWidget {
-  const FarmerOrdersScreen({super.key});
+  final int initialIndex;
+  const FarmerOrdersScreen({super.key, this.initialIndex = 0});
 
   @override
   State<FarmerOrdersScreen> createState() => _FarmerOrdersScreenState();
@@ -16,13 +19,17 @@ class FarmerOrdersScreen extends StatefulWidget {
 
 class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
   final OrderService _orderService = OrderService();
+  final MedicineOrderService _medOrderService = MedicineOrderService();
   final SessionService _sessionService = SessionService();
   String? _farmerId;
+  String? _farmerName; // To check if user is logged in
 
   @override
   void initState() {
     super.initState();
-    _farmerId = _sessionService.getCurrentUserId();
+    final user = _sessionService.user;
+    _farmerId = user?.id;
+    _farmerName = user?.name;
   }
 
   @override
@@ -33,95 +40,165 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
       );
     }
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: AppBar(
-        title: Text(
-          'My Orders',
-          style: GoogleFonts.outfit(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
+    return DefaultTabController(
+      length: 2,
+      initialIndex: widget.initialIndex,
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
+        appBar: AppBar(
+          title: Text(
+            'My Orders',
+            style: GoogleFonts.outfit(
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          iconTheme: const IconThemeData(color: Colors.white),
+          bottom: TabBar(
+            indicatorColor: Colors.white,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white60,
+            labelStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            tabs: const [
+              Tab(text: 'Received (Sales)'),
+              Tab(text: 'Placed (Purchases)'),
+            ],
           ),
         ),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ScreenBackground(
-        imagePath:
-            'https://images.unsplash.com/photo-1595855708573-455bc328227b?auto=format&fit=crop&q=80&w=1920', // Crates of food
-        gradient: AppConstants.oceanGradient,
-        child: StreamBuilder<List<OrderModel>>(
-          stream: _orderService.streamFarmerSales(_farmerId!),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(
-                child: CircularProgressIndicator(color: Colors.white),
-              );
-            }
-
-            if (snapshot.hasError) {
-              return Center(
-                child: Text(
-                  'Error loading orders',
-                  style: GoogleFonts.inter(color: Colors.white),
-                ),
-              );
-            }
-
-            final orders = snapshot.data ?? [];
-
-            if (orders.isEmpty) {
-              return Center(
-                child: GlassContainer(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.shopping_bag_outlined,
-                        size: 64,
-                        color: Colors.white54,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No orders yet',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Your sales will appear here',
-                        style: GoogleFonts.inter(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            return ListView.builder(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                kToolbarHeight + 40,
-                16,
-                16,
-              ),
-              itemCount: orders.length,
-              itemBuilder: (context, index) {
-                return _buildOrderCard(context, orders[index]);
-              },
-            );
-          },
+        body: ScreenBackground(
+          imagePath:
+              'https://images.unsplash.com/photo-1595855708573-455bc328227b?auto=format&fit=crop&q=80&w=1920', // Crates of food
+          gradient: AppConstants.oceanGradient,
+          child: TabBarView(
+            children: [_buildReceivedOrdersList(), _buildPlacedOrdersList()],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildOrderCard(BuildContext context, OrderModel order) {
+  Widget _buildReceivedOrdersList() {
+    return StreamBuilder<List<OrderModel>>(
+      stream: _orderService.streamFarmerSales(_farmerId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading orders',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+          );
+        }
+
+        final orders = snapshot.data ?? [];
+
+        if (orders.isEmpty) {
+          return _buildEmptyState(
+            'No sales yet',
+            'Your received orders will appear here',
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            kToolbarHeight + 90, // Adjusted for TabBar
+            16,
+            16,
+          ),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            return _buildSalesOrderCard(context, orders[index]);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildPlacedOrdersList() {
+    return StreamBuilder<List<MedicineOrderModel>>(
+      stream: _medOrderService.streamFarmerOrders(_farmerId!),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: CircularProgressIndicator(color: Colors.white),
+          );
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Text(
+              'Error loading orders',
+              style: GoogleFonts.inter(color: Colors.white),
+            ),
+          );
+        }
+
+        final orders = snapshot.data ?? [];
+
+        if (orders.isEmpty) {
+          return _buildEmptyState(
+            'No purchases yet',
+            'Your medicine orders will appear here',
+          );
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.fromLTRB(
+            16,
+            kToolbarHeight + 90, // Adjusted for TabBar
+            16,
+            16,
+          ),
+          itemCount: orders.length,
+          itemBuilder: (context, index) {
+            return _buildPurchaseOrderCard(orders[index]);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(String title, String subtitle) {
+    return Center(
+      child: GlassContainer(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.shopping_bag_outlined,
+              size: 64,
+              color: Colors.white54,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: GoogleFonts.outfit(
+                fontSize: 20,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(subtitle, style: GoogleFonts.inter(color: Colors.white70)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- Methods for Sales Orders (Received) ---
+
+  Widget _buildSalesOrderCard(BuildContext context, OrderModel order) {
     Color statusColor = _getStatusColor(order.status);
 
     return Container(
@@ -164,13 +241,6 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            // We might need to fetch buyer name separately or store it in OrderModel.
-            // For now, let's just show Buyer ID or a placeholder if not available.
-            // Since OrderModel has buyerId but not buyerName, we can just show "Buyer"
-            // or modify backend/OrderModel to include buyerName.
-            // Looking at previous mock data, it had buyerName.
-            // OrderModel has buyerId. Let's assume for now we don't have the name readily available
-            // without another fetch. I'll just label it "Customer".
             Text(
               'Customer ID: ${order.buyerId.substring(0, 5)}...',
               style: GoogleFonts.inter(color: Colors.white70),
@@ -227,7 +297,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                       children: [
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => _updateStatus(
+                            onPressed: () => _updateSalesStatus(
                               context,
                               order.id,
                               AppConstants.orderApproved,
@@ -242,11 +312,11 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: OutlinedButton(
-                            onPressed: () => _updateStatus(
+                            onPressed: () => _updateSalesStatus(
                               context,
                               order.id,
                               AppConstants.orderCancelled,
-                            ), // Assuming rejection cancels or adds a rejected status
+                            ),
                             style: OutlinedButton.styleFrom(
                               foregroundColor: Colors.redAccent,
                               side: const BorderSide(color: Colors.redAccent),
@@ -268,7 +338,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => _updateStatus(
+                        onPressed: () => _updateSalesStatus(
                           context,
                           order.id,
                           AppConstants.orderProcessing,
@@ -292,7 +362,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => _updateStatus(
+                        onPressed: () => _updateSalesStatus(
                           context,
                           order.id,
                           AppConstants.orderShipped,
@@ -313,7 +383,7 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
     );
   }
 
-  Future<void> _updateStatus(
+  Future<void> _updateSalesStatus(
     BuildContext context,
     String orderId,
     String status,
@@ -351,10 +421,84 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
       case AppConstants.orderApproved:
         return Colors.purple;
       case AppConstants.orderCancelled:
-      case 'rejected': // Handle rejected if it's a valid status
+      case 'rejected':
         return Colors.red;
       default:
         return Colors.grey;
     }
+  }
+
+  // --- Methods for Purchase Orders (Placed) ---
+
+  Widget _buildPurchaseOrderCard(MedicineOrderModel order) {
+    final dateStr = DateFormat('dd MMM yyyy, hh:mm a').format(order.createdAt);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: GlassContainer(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  order.medicineName,
+                  style: GoogleFonts.outfit(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                _buildPurchaseStatusChip(order.status),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Qty: ${order.quantity} • Total: ₹${order.totalAmount}',
+              style: GoogleFonts.inter(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Date: $dateStr',
+              style: GoogleFonts.inter(color: Colors.white70, fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPurchaseStatusChip(String status) {
+    Color color;
+    switch (status.toLowerCase()) {
+      case 'delivered':
+        color = Colors.green;
+        break;
+      case 'dispatched':
+        color = Colors.blue;
+        break;
+      case 'approved':
+        color = Colors.orange;
+        break;
+      case 'cancelled':
+        color = Colors.red;
+        break;
+      default:
+        color = Colors.grey;
+        break;
+    }
+
+    return Chip(
+      label: Text(
+        status.toUpperCase(),
+        style: const TextStyle(color: Colors.white, fontSize: 10),
+      ),
+      backgroundColor: color,
+    );
   }
 }

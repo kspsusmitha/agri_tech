@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import '../../utils/constants.dart';
 import '../../services/product_service.dart';
 import '../../models/product_model.dart';
+import '../../services/medicine_service.dart';
+import '../../models/medicine_model.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'dart:convert';
+import 'dart:async';
 
 class ProductApprovalScreen extends StatefulWidget {
   const ProductApprovalScreen({super.key});
@@ -15,7 +18,62 @@ class ProductApprovalScreen extends StatefulWidget {
 
 class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
   final ProductService _productService = ProductService();
+  final MedicineService _medicineService = MedicineService();
   String _selectedFilter = 'Pending';
+
+  // Stream controller to emit combined lists
+  late StreamController<List<dynamic>> _combinedStreamController;
+  // Subscriptions to input streams
+  StreamSubscription? _productSubscription;
+  StreamSubscription? _medicineSubscription;
+  // Local cache of latest data
+  List<ProductModel> _products = [];
+  List<MedicineModel> _medicines = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _combinedStreamController = StreamController<List<dynamic>>.broadcast();
+    _initStreams();
+  }
+
+  void _initStreams() {
+    _productSubscription = _productService.streamAllProducts().listen((
+      products,
+    ) {
+      _products = products;
+      _emitCombined();
+    });
+
+    _medicineSubscription = _medicineService.streamAllMedicines().listen((
+      medicines,
+    ) {
+      _medicines = medicines;
+      _emitCombined();
+    });
+  }
+
+  void _emitCombined() {
+    final allItems = [..._products, ..._medicines];
+    allItems.sort((a, b) {
+      final dateA = a is ProductModel
+          ? a.createdAt
+          : (a as MedicineModel).createdAt;
+      final dateB = b is ProductModel
+          ? b.createdAt
+          : (b as MedicineModel).createdAt;
+      return dateB.compareTo(dateA);
+    });
+    _combinedStreamController.add(allItems);
+  }
+
+  @override
+  void dispose() {
+    _productSubscription?.cancel();
+    _medicineSubscription?.cancel();
+    _combinedStreamController.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +81,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'Product Decisons',
+          'Product & Medicine Decisions',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -38,22 +96,37 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
             const SizedBox(height: kToolbarHeight + 40),
             _buildFilterBar(),
             Expanded(
-              child: StreamBuilder<List<ProductModel>>(
-                stream: _productService.streamAllProducts(),
+              child: StreamBuilder<List<dynamic>>(
+                stream: _combinedStreamController.stream,
                 builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
+                  if (snapshot.connectionState == ConnectionState.waiting &&
+                      !_combinedStreamController.hasListener) {
+                    // Only show loader if we haven't emitted yet.
+                    // Note: StreamBuilder might show waiting initially.
+                    // Given we start listening in initState, we might have data quickly.
+                    // But standard waiting check is fine.
                     return const Center(
                       child: CircularProgressIndicator(color: Colors.white24),
                     );
                   }
 
-                  final allProducts = snapshot.data ?? [];
-                  final filteredProducts = allProducts.where((p) {
-                    return p.status.toLowerCase() ==
+                  if (!snapshot.hasData &&
+                      snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(
+                      child: CircularProgressIndicator(color: Colors.white24),
+                    );
+                  }
+
+                  final allItems = snapshot.data ?? [];
+                  final filteredItems = allItems.where((item) {
+                    final status = item is ProductModel
+                        ? item.status
+                        : (item as MedicineModel).status;
+                    return status.toLowerCase() ==
                         _selectedFilter.toLowerCase();
                   }).toList();
 
-                  if (filteredProducts.isEmpty) {
+                  if (filteredItems.isEmpty) {
                     return _buildEmptyState();
                   }
 
@@ -62,10 +135,10 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                       horizontal: 20,
                       vertical: 10,
                     ),
-                    itemCount: filteredProducts.length,
+                    itemCount: filteredItems.length,
                     itemBuilder: (context, index) {
-                      final product = filteredProducts[index];
-                      return _buildProductCard(product);
+                      final item = filteredItems[index];
+                      return _buildItemCard(item);
                     },
                   );
                 },
@@ -89,7 +162,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
           ),
           const SizedBox(height: 20),
           Text(
-            'No $_selectedFilter products',
+            'No $_selectedFilter items',
             style: GoogleFonts.inter(color: Colors.white30, fontSize: 18),
           ),
         ],
@@ -141,10 +214,22 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
     );
   }
 
-  Widget _buildProductCard(ProductModel product) {
-    Color statusColor = product.status == AppConstants.productApproved
+  Widget _buildItemCard(dynamic item) {
+    final isProduct = item is ProductModel;
+    final name = isProduct ? item.name : (item as MedicineModel).name;
+    final status = isProduct ? item.status : (item as MedicineModel).status;
+    final price = isProduct ? item.price : (item as MedicineModel).price;
+    final imageBase64 = isProduct
+        ? item.imageBase64
+        : (item as MedicineModel).imageUrl;
+    final subtitle = isProduct
+        ? item.farmerName
+        : (item as MedicineModel).category;
+    final unitOrType = isProduct ? item.unit : 'unit';
+
+    Color statusColor = status == AppConstants.productApproved
         ? Colors.greenAccent
-        : product.status == AppConstants.productRejected
+        : status == AppConstants.productRejected
         ? Colors.redAccent
         : Colors.orangeAccent;
 
@@ -158,7 +243,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
           children: [
             Row(
               children: [
-                // Product Image
+                // Item Image
                 Container(
                   width: 90,
                   height: 90,
@@ -166,20 +251,18 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                     color: Colors.white.withOpacity(0.05),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: product.imageBase64 != null
+                  child: imageBase64 != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(16),
                           child:
-                              product.imageBase64!.startsWith('data:image') ||
-                                  product.imageBase64!.length > 100
+                              imageBase64.startsWith('data:image') ||
+                                  imageBase64.length > 100
                               ? Image.memory(
-                                  base64Decode(
-                                    product.imageBase64!.split(',').last,
-                                  ),
+                                  base64Decode(imageBase64.split(',').last),
                                   fit: BoxFit.cover,
                                 )
                               : Image.network(
-                                  product.imageBase64!,
+                                  imageBase64,
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
                                       const Icon(
@@ -196,7 +279,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        product.name,
+                        name,
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -206,15 +289,17 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(
-                            Icons.person_pin_rounded,
+                          Icon(
+                            isProduct
+                                ? Icons.person_pin_rounded
+                                : Icons.medical_services_rounded,
                             size: 14,
                             color: Colors.white38,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              product.farmerName,
+                              subtitle,
                               style: GoogleFonts.inter(
                                 color: Colors.white60,
                                 fontSize: 13,
@@ -228,20 +313,21 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                       Row(
                         children: [
                           Text(
-                            '₹${product.price}',
+                            '₹$price',
                             style: GoogleFonts.outfit(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
                             ),
                           ),
-                          Text(
-                            ' / ${product.unit}',
-                            style: GoogleFonts.inter(
-                              color: Colors.white38,
-                              fontSize: 12,
+                          if (isProduct)
+                            Text(
+                              ' / $unitOrType',
+                              style: GoogleFonts.inter(
+                                color: Colors.white38,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
                         ],
                       ),
                     ],
@@ -265,7 +351,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                     border: Border.all(color: statusColor.withOpacity(0.2)),
                   ),
                   child: Text(
-                    product.status.toUpperCase(),
+                    status.toUpperCase(),
                     style: GoogleFonts.inter(
                       color: statusColor,
                       fontSize: 10,
@@ -275,20 +361,23 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                   ),
                 ),
                 const Spacer(),
-                Text(
-                  'Stock: ${product.quantity} ${product.unit}',
-                  style: GoogleFonts.inter(color: Colors.white24, fontSize: 12),
-                ),
+                if (isProduct)
+                  Text(
+                    'Stock: ${(item as ProductModel).quantity} ${item.unit}',
+                    style: GoogleFonts.inter(
+                      color: Colors.white24,
+                      fontSize: 12,
+                    ),
+                  ),
               ],
             ),
-            if (product.status == AppConstants.productPending) ...[
+            if (status == AppConstants.productPending) ...[
               const SizedBox(height: 20),
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () =>
-                          _showApprovalDialog(context, product, true),
+                      onPressed: () => _showApprovalDialog(context, item, true),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.greenAccent.withOpacity(0.8),
                         foregroundColor: Colors.black87,
@@ -311,7 +400,7 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: () =>
-                          _showApprovalDialog(context, product, false),
+                          _showApprovalDialog(context, item, false),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.redAccent,
                         side: const BorderSide(color: Colors.redAccent),
@@ -338,18 +427,17 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
     );
   }
 
-  void _showApprovalDialog(
-    BuildContext context,
-    ProductModel product,
-    bool approve,
-  ) {
+  void _showApprovalDialog(BuildContext context, dynamic item, bool approve) {
+    final isProduct = item is ProductModel;
+    final name = isProduct ? item.name : (item as MedicineModel).name;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xff1a0b2e),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Text(
-          approve ? 'Approve Product' : 'Reject Product',
+          approve ? 'Approve Item' : 'Reject Item',
           style: GoogleFonts.outfit(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -357,8 +445,8 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
         ),
         content: Text(
           approve
-              ? 'Are you sure you want to approve "${product.name}"?'
-              : 'Are you sure you want to reject "${product.name}"?',
+              ? 'Are you sure you want to approve "$name"?'
+              : 'Are you sure you want to reject "$name"?',
           style: GoogleFonts.inter(color: Colors.white70),
         ),
         actions: [
@@ -371,19 +459,24 @@ class _ProductApprovalScreenState extends State<ProductApprovalScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              _productService.updateProductStatus(
-                product.id,
-                approve
-                    ? AppConstants.productApproved
-                    : AppConstants.productRejected,
-              );
+              final newStatus = approve
+                  ? AppConstants.productApproved
+                  : AppConstants.productRejected;
+
+              if (isProduct) {
+                _productService.updateProductStatus(item.id, newStatus);
+              } else {
+                _medicineService.updateMedicineStatus(
+                  (item as MedicineModel).id,
+                  newStatus,
+                );
+              }
+
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text(
-                    approve
-                        ? 'Product approved successfully'
-                        : 'Product rejected',
+                    approve ? 'Item approved successfully' : 'Item rejected',
                   ),
                   backgroundColor: approve ? Colors.green : Colors.red,
                 ),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../services/weather_service.dart';
 import '../../models/weather_model.dart';
 import '../../services/session_service.dart';
@@ -18,6 +19,7 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
   final WeatherService _weatherService = WeatherService();
   WeatherModel? _currentWeather;
   bool _isLoading = true;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,12 +28,66 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
   }
 
   Future<void> _loadWeather() async {
-    setState(() => _isLoading = true);
-    final user = SessionService().user;
-    if (user != null) {
-      _currentWeather = await _weatherService.getCurrentWeather(user.id);
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = SessionService().user;
+      if (user != null) {
+        // Get current location
+        Position? position = await _determinePosition();
+
+        if (position != null) {
+          _currentWeather = await _weatherService.getCurrentWeather(
+            user.id,
+            lat: position.latitude,
+            lon: position.longitude,
+          );
+        } else {
+          // Fallback to mock if location denied/fails
+          _currentWeather = await _weatherService.getCurrentWeather(user.id);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading weather: $e');
+      _errorMessage =
+          'Could not fetch weather data. Please check your connection.';
+      // Try to load mock data as fallback
+      final user = SessionService().user;
+      if (user != null) {
+        _currentWeather = await _weatherService.getCurrentWeather(user.id);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
-    setState(() => _isLoading = false);
+  }
+
+  Future<Position?> _determinePosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      return null;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        return null; // Permission denied
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      return null; // Permissions are permanently denied
+    }
+
+    return await Geolocator.getCurrentPosition();
   }
 
   @override
@@ -40,7 +96,7 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
       extendBodyBehindAppBar: true,
       appBar: AppBar(
         title: Text(
-          'Weather Alerts',
+          'AI Weather Alerts',
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
@@ -58,8 +114,18 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
         gradient: AppConstants.oceanGradient,
         child: _isLoading
             ? const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                    SizedBox(height: 16),
+                    Text(
+                      "Analyzing weather conditions...",
+                      style: TextStyle(color: Colors.white70),
+                    ),
+                  ],
                 ),
               )
             : RefreshIndicator(
@@ -73,6 +139,14 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (_errorMessage != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(color: Colors.redAccent),
+                            ),
+                          ),
                         _buildCurrentWeatherCard(),
                         const SizedBox(height: 32),
                         Padding(
@@ -111,7 +185,7 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
                 children: [
                   Text(
                     DateFormat(
-                      'EEEE, MMM d',
+                      'EEEE, MMM d, h:mm a',
                     ).format(_currentWeather!.timestamp),
                     style: GoogleFonts.inter(
                       color: Colors.white.withOpacity(0.7),
@@ -168,56 +242,78 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
                 _buildWeatherDetail(
                   Icons.thermostat_rounded,
                   'Feels Like',
-                  '30°C',
+                  '${(_currentWeather!.temperature + 2).toStringAsFixed(1)}°C', // Simple approximation
                 ),
               ],
             ),
           ),
-          if (_currentWeather!.alertType != null) ...[
+          if (_currentWeather!.alertMessage != null) ...[
             const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.orangeAccent.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.orangeAccent.withOpacity(0.3)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.warning_amber_rounded,
-                    color: Colors.orangeAccent,
-                    size: 28,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Weather Caution',
-                          style: GoogleFonts.inter(
-                            color: Colors.orangeAccent,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _currentWeather!.alertMessage ??
-                              'Extreme conditions expected',
-                          style: GoogleFonts.inter(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            _buildAIAlertBox(), // New AI Alert Box
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAIAlertBox() {
+    final alertType = _currentWeather!.alertType?.toLowerCase() ?? 'advisory';
+    Color alertColor = Colors.blueAccent;
+    IconData alertIcon = Icons.info_outline_rounded;
+    String title = "Farming Advisory";
+
+    if (alertType.contains('warning') || alertType.contains('storm')) {
+      alertColor = Colors.orangeAccent;
+      alertIcon = Icons.warning_amber_rounded;
+      title = "Weather Warning";
+    } else if (alertType.contains('critical') || alertType.contains('heat')) {
+      alertColor = Colors.redAccent;
+      alertIcon = Icons.report_gmailerrorred_rounded;
+      title = "Critical Alert";
+    } else if (alertType.contains('safe')) {
+      alertColor = Colors.greenAccent;
+      alertIcon = Icons.check_circle_outline_rounded;
+      title = "Conditions Optimal";
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: alertColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: alertColor.withOpacity(0.4), width: 1.5),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.auto_awesome, // AI Icon
+                color: alertColor,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                "AI INSIGHT: $title",
+                style: GoogleFonts.inter(
+                  color: alertColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            _currentWeather!.alertMessage ?? '',
+            style: GoogleFonts.inter(
+              color: Colors.white,
+              fontSize: 15,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );
@@ -355,22 +451,25 @@ class _WeatherAlertScreenState extends State<WeatherAlertScreen> {
     if (condition.contains('sun') || condition.contains('clear'))
       return Icons.wb_sunny_rounded;
     if (condition.contains('storm')) return Icons.thunderstorm_rounded;
+    if (condition.contains('snow')) return Icons.ac_unit_rounded;
     return Icons.cloud_rounded;
   }
 
   IconData _getAlertIcon(String? type) {
     type = type?.toLowerCase();
-    if (type == 'rainfall') return Icons.umbrella_rounded;
-    if (type == 'heat') return Icons.thermostat_rounded;
-    if (type == 'storm') return Icons.thunderstorm_rounded;
+    if (type?.contains('rain') ?? false) return Icons.umbrella_rounded;
+    if (type?.contains('heat') ?? false) return Icons.thermostat_rounded;
+    if (type?.contains('storm') ?? false) return Icons.thunderstorm_rounded;
+    if (type?.contains('safe') ?? false) return Icons.check_circle_outline;
     return Icons.warning_rounded;
   }
 
   Color _getAlertColor(String? type) {
     type = type?.toLowerCase();
-    if (type == 'rainfall') return Colors.blueAccent;
-    if (type == 'heat') return Colors.orangeAccent;
-    if (type == 'storm') return Colors.redAccent;
+    if (type?.contains('rain') ?? false) return Colors.blueAccent;
+    if (type?.contains('heat') ?? false) return Colors.orangeAccent;
+    if (type?.contains('storm') ?? false) return Colors.redAccent;
+    if (type?.contains('safe') ?? false) return Colors.greenAccent;
     return Colors.white70;
   }
 }

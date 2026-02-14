@@ -6,11 +6,15 @@ import '../role_selection_screen.dart';
 import 'product_browse_screen.dart';
 import 'buyer_cart_screen.dart';
 import 'buyer_orders_screen.dart';
+import 'buyer_profile_screen.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../farmer/medicine_seller_search_screen.dart';
 
 class BuyerDashboardScreen extends StatefulWidget {
-  const BuyerDashboardScreen({super.key});
+  final int initialIndex;
+
+  const BuyerDashboardScreen({super.key, this.initialIndex = 0});
 
   @override
   State<BuyerDashboardScreen> createState() => _BuyerDashboardScreenState();
@@ -22,9 +26,16 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
 
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    _selectedIndex = widget.initialIndex;
+  }
+
   final List<Color> _bgColors_0 = AppConstants.sunsetGradient;
   final List<Color> _bgColors_1 = AppConstants.primaryGradient;
-  final List<Color> _bgColors_2 = AppConstants.oceanGradient;
+  final List<Color> _bgColors_2 = AppConstants.sunsetGradient; // Orders
+  final List<Color> _bgColors_3 = AppConstants.oceanGradient; // Profile
 
   List<Color> get _currentGradient {
     switch (_selectedIndex) {
@@ -32,6 +43,8 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
         return _bgColors_1;
       case 2:
         return _bgColors_2;
+      case 3:
+        return _bgColors_3;
       default:
         return _bgColors_0;
     }
@@ -42,6 +55,8 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
       case 1:
         return 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=1920';
       case 2:
+        return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1920'; // Reuse bg or find new
+      case 3:
         return 'https://images.unsplash.com/photo-1549419134-2e259e218228?auto=format&fit=crop&q=80&w=1920';
       default:
         return 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=1920';
@@ -62,8 +77,9 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
           index: _selectedIndex,
           children: [
             _buildHomeContent(),
-            const ProductBrowseScreen(), // Ensure this screen handles its own safe area/appbar if needed
+            const ProductBrowseScreen(),
             const BuyerOrdersScreen(),
+            const BuyerProfileScreen(),
           ],
         ),
       ),
@@ -232,8 +248,12 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
               label: 'Shop',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.receipt_rounded),
+              icon: Icon(Icons.history_rounded),
               label: 'Orders',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_rounded),
+              label: 'Profile',
             ),
           ],
           onTap: (index) {
@@ -264,24 +284,24 @@ class _BuyerDashboardScreenState extends State<BuyerDashboardScreen> {
         ),
         _buildActionGlassCard(
           context,
-          'My Cart',
-          Icons.shopping_cart_rounded,
+          'Buy Medicines',
+          Icons.medication_liquid_rounded,
           AppConstants.oceanGradient,
-          () => _navigateTo(context, const BuyerCartScreen()),
+          () => _navigateTo(context, const MedicineSellerSearchScreen()),
         ),
         _buildActionGlassCard(
           context,
           'Order History',
           Icons.history_rounded,
           AppConstants.sunsetGradient,
-          () => setState(() => _selectedIndex = 2), // Switch to Orders Tab
+          () => _navigateTo(context, const BuyerOrdersScreen()),
         ),
         _buildActionGlassCard(
           context,
           'Track Delivery',
           Icons.local_shipping_rounded,
           AppConstants.purpleGradient,
-          () => setState(() => _selectedIndex = 2), // Switch to Orders Tab
+          () => _navigateTo(context, const BuyerOrdersScreen()),
         ),
       ],
     );

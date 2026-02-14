@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'buyer_cart_screen.dart';
 import '../../widgets/glass_widgets.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'product_detail_screen.dart';
 
 class ProductBrowseScreen extends StatefulWidget {
   const ProductBrowseScreen({super.key});
@@ -318,142 +319,10 @@ class _ProductBrowseScreenState extends State<ProductBrowseScreen> {
   }
 
   void _showProductDetails(ProductModel product) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      isScrollControlled: true,
-      builder: (context) => GlassContainer(
-        borderRadius: 40,
-        color: Colors.black87,
-        child: DraggableScrollableSheet(
-          initialChildSize: 0.8,
-          minChildSize: 0.5,
-          maxChildSize: 0.95,
-          expand: false,
-          builder: (context, scrollController) => SingleChildScrollView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(30),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Container(
-                    width: 50,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 30),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: product.imageBase64 != null
-                      ? Image.memory(
-                          base64Decode(product.imageBase64!),
-                          fit: BoxFit.cover,
-                          height: 300,
-                          width: double.infinity,
-                        )
-                      : Container(
-                          height: 300,
-                          color: Colors.white10,
-                          child: const Icon(
-                            Icons.image,
-                            size: 80,
-                            color: Colors.white24,
-                          ),
-                        ),
-                ),
-                const SizedBox(height: 30),
-                Text(
-                  product.name,
-                  style: GoogleFonts.outfit(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                Text(
-                  'Fresh from ${product.farmerName}\'s farm',
-                  style: GoogleFonts.inter(color: Colors.white70),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Overview',
-                  style: GoogleFonts.outfit(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  product.description.isEmpty
-                      ? 'Fresh organic ${product.name.toLowerCase()} grown with care.'
-                      : product.description,
-                  style: GoogleFonts.inter(
-                    color: Colors.white60,
-                    fontSize: 15,
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 40),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Price per ${product.unit}',
-                          style: GoogleFonts.inter(
-                            color: Colors.white38,
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          '₹${product.price}',
-                          style: GoogleFonts.outfit(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                    ElevatedButton.icon(
-                      onPressed: () {
-                        _cartService.addToCart(_buyerId, product, 1);
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('${product.name} added to cart'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.add_shopping_cart_rounded),
-                      label: const Text('Add to Cart'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 24,
-                          vertical: 16,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 30),
-              ],
-            ),
-          ),
-        ),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailScreen(product: product),
       ),
     );
   }

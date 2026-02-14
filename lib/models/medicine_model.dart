@@ -9,6 +9,8 @@ class MedicineModel {
   final double price;
   final String? imageUrl;
   final String sellerId;
+  final String status; // pending, approved, rejected
+  final DateTime createdAt;
 
   MedicineModel({
     required this.id,
@@ -21,6 +23,8 @@ class MedicineModel {
     required this.price,
     this.imageUrl,
     required this.sellerId,
+    this.status = 'pending',
+    required this.createdAt,
   });
 
   Map<String, dynamic> toJson() {
@@ -35,6 +39,8 @@ class MedicineModel {
       'price': price,
       'imageUrl': imageUrl,
       'sellerId': sellerId,
+      'status': status,
+      'createdAt': createdAt.toIso8601String(),
     };
   }
 
@@ -50,6 +56,42 @@ class MedicineModel {
       price: (json['price'] ?? 0.0).toDouble(),
       imageUrl: json['imageUrl'],
       sellerId: json['sellerId'] ?? '',
+      status: json['status'] ?? 'pending',
+      createdAt: json['createdAt'] is String
+          ? DateTime.parse(json['createdAt'])
+          : (json['createdAt'] != null
+                ? (json['createdAt'] as dynamic).toDate()
+                : DateTime.now()),
+    );
+  }
+
+  MedicineModel copyWith({
+    String? id,
+    String? name,
+    String? category,
+    String? targetDisease,
+    String? instructions,
+    String? providerName,
+    String? providerUrl,
+    double? price,
+    String? imageUrl,
+    String? sellerId,
+    String? status,
+    DateTime? createdAt,
+  }) {
+    return MedicineModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      category: category ?? this.category,
+      targetDisease: targetDisease ?? this.targetDisease,
+      instructions: instructions ?? this.instructions,
+      providerName: providerName ?? this.providerName,
+      providerUrl: providerUrl ?? this.providerUrl,
+      price: price ?? this.price,
+      imageUrl: imageUrl ?? this.imageUrl,
+      sellerId: sellerId ?? this.sellerId,
+      status: status ?? this.status,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }

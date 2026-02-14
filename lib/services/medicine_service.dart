@@ -34,6 +34,49 @@ class MedicineService {
     }
   }
 
+  /// Fetch fertilizer/medicine suggestions for a list of keywords
+  Future<List<MedicineModel>> getSuggestionsForKeywords(
+    List<String> keywords,
+  ) async {
+    try {
+      if (keywords.isEmpty) return [];
+
+      final snapshot = await _database.child('medicines').get();
+      if (!snapshot.exists) return [];
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final suggestions = <MedicineModel>[];
+      final seenIds = <String>{};
+
+      data.forEach((key, value) {
+        final medicineData = Map<String, dynamic>.from(value);
+        final medicine = MedicineModel.fromJson(medicineData);
+
+        // Check if medicine matches any keyword
+        for (final keyword in keywords) {
+          final k = keyword.toLowerCase();
+          if (medicine.name.toLowerCase().contains(k) ||
+              medicine.category.toLowerCase().contains(k) ||
+              medicine.targetDisease.toLowerCase().contains(k) ||
+              medicine.instructions.toLowerCase().contains(k)) {
+            if (!seenIds.contains(medicine.id)) {
+              suggestions.add(medicine);
+              seenIds.add(medicine.id);
+            }
+            break; // Found a match, move to next medicine
+          }
+        }
+      });
+
+      return suggestions;
+    } catch (e) {
+      debugPrint(
+        '❌ [Medicine Service] Error fetching suggestions by keywords: $e',
+      );
+      return [];
+    }
+  }
+
   /// Get all medicines available
   Stream<List<MedicineModel>> streamAllMedicines() {
     return _database.child('medicines').onValue.map((event) {
@@ -50,11 +93,56 @@ class MedicineService {
     return _database.child('medicines').onValue.map((event) {
       if (!event.snapshot.exists) return [];
       final data = event.snapshot.value as Map<dynamic, dynamic>;
-      return data.values
+      final medicines = data.values
           .map((v) => MedicineModel.fromJson(Map<String, dynamic>.from(v)))
           .where((m) => m.sellerId == sellerId)
           .toList();
+      // Sort by newest first
+      medicines.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return medicines;
     });
+  }
+
+  /// Get approved medicines (for farmers/buyers)
+  Stream<List<MedicineModel>> streamApprovedMedicines() {
+    return _database.child('medicines').onValue.map((event) {
+      if (!event.snapshot.exists) return [];
+      final data = event.snapshot.value as Map<dynamic, dynamic>;
+      final medicines = data.values
+          .map((v) => MedicineModel.fromJson(Map<String, dynamic>.from(v)))
+          .where((m) => m.status == 'approved')
+          .toList();
+      // Sort by newest first
+      medicines.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return medicines;
+    });
+  }
+
+  /// Get list of unique diseases from existing medicines
+  Future<List<String>> getKnownDiseases() async {
+    try {
+      final snapshot = await _database.child('medicines').get();
+      if (!snapshot.exists) return [];
+
+      final data = snapshot.value as Map<dynamic, dynamic>;
+      final diseases = <String>{};
+
+      data.forEach((key, value) {
+        final medicineData = Map<String, dynamic>.from(value);
+        if (medicineData.containsKey('targetDisease')) {
+          final disease = medicineData['targetDisease'] as String;
+          if (disease.isNotEmpty) {
+            diseases.add(disease);
+          }
+        }
+      });
+
+      final sortedList = diseases.toList()..sort();
+      return sortedList;
+    } catch (e) {
+      debugPrint('❌ [Medicine Service] Error fetching known diseases: $e');
+      return [];
+    }
   }
 
   /// Add a new medicine to both Realtime Database and Firestore
@@ -135,6 +223,33 @@ class MedicineService {
       debugPrint('✅ [Medicine Service] Deleted from Firestore: $medicineId');
     } catch (e) {
       debugPrint('❌ [Medicine Service] Error deleting medicine: $e');
+      rethrow;
+    }
+  }
+
+  /// Update medicine status (Approved/Rejected)
+  Future<void> updateMedicineStatus(String medicineId, String status) async {
+    try {
+      // 1. Update in Realtime Database
+      await _database.child('medicines').child(medicineId).update({
+        'status': status,
+      });
+      debugPrint(
+        '✅ [Medicine Service] Status updated to $status in Realtime DB: $medicineId',
+      );
+
+      // 2. Update in Firestore
+      _firestore
+          .collection('medicines')
+          .doc(medicineId)
+          .update({'status': status})
+          .catchError(
+            (e) => debugPrint(
+              '❌ [Medicine Service] Firestore status update error: $e',
+            ),
+          );
+    } catch (e) {
+      debugPrint('❌ [Medicine Service] Error updating status: $e');
       rethrow;
     }
   }

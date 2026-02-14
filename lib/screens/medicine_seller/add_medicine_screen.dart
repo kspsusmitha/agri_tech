@@ -10,7 +10,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AddMedicineScreen extends StatefulWidget {
   final MedicineModel? medicine;
-  const AddMedicineScreen({super.key, this.medicine});
+  final String? initialName;
+  const AddMedicineScreen({super.key, this.medicine, this.initialName});
 
   @override
   State<AddMedicineScreen> createState() => _AddMedicineScreenState();
@@ -31,7 +32,9 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.medicine?.name);
+    _nameController = TextEditingController(
+      text: widget.medicine?.name ?? widget.initialName,
+    );
     _targetDiseaseController = TextEditingController(
       text: widget.medicine?.targetDisease,
     );
@@ -87,6 +90,8 @@ class _AddMedicineScreenState extends State<AddMedicineScreen> {
       price: double.parse(_priceController.text),
       imageUrl: _imageBase64,
       sellerId: sellerId,
+      createdAt: widget.medicine?.createdAt ?? DateTime.now(),
+      status: widget.medicine?.status ?? 'pending',
     );
 
     try {

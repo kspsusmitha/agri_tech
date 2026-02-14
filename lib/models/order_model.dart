@@ -12,6 +12,7 @@ class OrderModel {
   final String? rating;
   final String? feedback;
   final DateTime? reviewedAt;
+  final String? paymentId;
 
   OrderModel({
     required this.id,
@@ -26,6 +27,7 @@ class OrderModel {
     this.rating,
     this.feedback,
     this.reviewedAt,
+    this.paymentId,
   });
 
   Map<String, dynamic> toJson() {
@@ -42,6 +44,7 @@ class OrderModel {
       'rating': rating,
       'feedback': feedback,
       'reviewedAt': reviewedAt?.toIso8601String(),
+      'paymentId': paymentId,
     };
   }
 
@@ -67,6 +70,7 @@ class OrderModel {
       reviewedAt: json['reviewedAt'] != null
           ? DateTime.parse(json['reviewedAt'])
           : null,
+      paymentId: json['paymentId'],
     );
   }
 }
